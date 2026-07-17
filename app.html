@@ -176,6 +176,24 @@ a{color:inherit;text-decoration:none}
   font-size:.78rem;border-radius:8px;padding:9px 12px;margin:0 0 16px;max-width:520px;
 }
 
+/* username prompt */
+.uname-overlay{
+  position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,7,13,.72);backdrop-filter:blur(5px);padding:20px;
+}
+.uname-overlay[hidden]{display:none}
+.uname-card{
+  width:100%;max-width:380px;background:var(--card);border:1px solid var(--line-strong);
+  border-radius:16px;padding:26px 24px;box-shadow:0 30px 90px rgba(0,0,0,.6);
+}
+.uname-card h3{font-size:1.05rem;letter-spacing:-.02em}
+.uname-card p{color:var(--grey);font-size:.8rem;margin:6px 0 16px}
+.uname-card .mem-input{width:100%}
+.uname-actions{display:flex;gap:10px;margin-top:16px}
+.uname-actions .tool-new{flex:1;text-align:center}
+.uname-skip{color:var(--dim);font-size:.8rem;padding:8px 12px}
+.uname-skip:hover{color:var(--white)}
+
 /* coming soon board */
 .soonboard{
   border:1px dashed var(--line-strong);border-radius:14px;padding:60px 30px;text-align:center;color:var(--grey);
@@ -201,6 +219,19 @@ a{color:inherit;text-decoration:none}
 </style>
 </head>
 <body>
+
+<div class="uname-overlay" id="uname-overlay" hidden>
+  <div class="uname-card" role="dialog" aria-modal="true" aria-labelledby="uname-title">
+    <h3 id="uname-title">Choose your username</h3>
+    <p>Your account doesn’t have a username yet. Pick one to use for signing in (you can always use your email too).</p>
+    <input class="mem-input" id="uname-input" type="text" autocomplete="off" spellcheck="false" maxlength="20" placeholder="e.g. jcabs">
+    <div class="mem-error" id="uname-error" role="alert" hidden style="margin:12px 0 0"></div>
+    <div class="uname-actions">
+      <button class="tool-new" id="uname-save">Save username</button>
+      <button class="uname-skip" id="uname-skip">Later</button>
+    </div>
+  </div>
+</div>
 
 <div id="gate">
   <img src="/logo.png" alt="MSMA logo">
@@ -279,6 +310,36 @@ function enter(user){
   }
   var mem = document.getElementById('sb-members');
   if (mem) mem.hidden = !IS_ADMIN;
+  checkUsername(user);
+}
+
+/* One-time username prompt for accounts created before the username system */
+function checkUsername(user){
+  var db2 = firebase.firestore();
+  db2.collection('users').doc(user.uid).get().then(function(doc){
+    if (doc.exists && doc.data().username) return;
+    var ov = document.getElementById('uname-overlay');
+    ov.hidden = false;
+    var inp = document.getElementById('uname-input');
+    var err = document.getElementById('uname-error');
+    inp.focus();
+    function fail(msg){ err.textContent = msg; err.hidden = false; }
+    function save(){
+      err.hidden = true;
+      var uname = inp.value.trim().toLowerCase();
+      if (!/^[a-z0-9._-]{3,20}$/.test(uname)) { fail('3–20 characters: letters, numbers, dots, dashes, or underscores.'); return; }
+      var ref = db2.collection('usernames').doc(uname);
+      ref.get().then(function(d){
+        if (d.exists && d.data().uid !== user.uid) { fail('That username is already taken — try another.'); return null; }
+        return ref.set({ uid: user.uid, email: user.email }).then(function(){
+          return db2.collection('users').doc(user.uid).set({ username: uname, email: user.email }, { merge: true });
+        }).then(function(){ ov.hidden = true; });
+      }).catch(function(){ fail('Couldn’t save right now — try again.'); });
+    }
+    document.getElementById('uname-save').addEventListener('click', save);
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') save(); });
+    document.getElementById('uname-skip').addEventListener('click', function(){ ov.hidden = true; });
+  }).catch(function(err){ console.warn('username check skipped:', err && err.code); });
 }
 document.getElementById('signout').addEventListener('click', function(){
   firebase.auth().signOut().then(function(){ window.location.replace('/'); });
