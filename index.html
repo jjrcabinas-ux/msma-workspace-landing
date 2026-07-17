@@ -1209,9 +1209,10 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     setupSubmit.textContent = 'Creating account…';
     var db = fb.firestore();
     var unameRef = db.collection('usernames').doc(uname);
+    var unameOk = false;
     unameRef.get().then(function(doc){
       if (doc.exists && doc.data().uid !== user.uid) { var e2 = new Error('taken'); e2.code = 'msma/username-taken'; throw e2; }
-      return unameRef.set({ uid: user.uid, email: user.email });
+      return unameRef.set({ uid: user.uid, email: user.email }).then(function(){ unameOk = true; });
     }).catch(function(err){
       // Firestore not ready yet (no DB / rules): continue without a username.
       if (err.code === 'msma/username-taken') throw err;
@@ -1220,6 +1221,10 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     }).then(function(){
       var cred = fb.auth.EmailAuthProvider.credential(user.email, p1);
       return user.linkWithCredential(cred);
+    }).then(function(){
+      if (!unameOk) return null;
+      // Also record it on the user profile — the workspace checks this.
+      return db.collection('users').doc(user.uid).set({ username: uname, email: user.email }, { merge: true });
     }).then(function(){
       window.location.href = '/app';
     }).catch(function(err){
