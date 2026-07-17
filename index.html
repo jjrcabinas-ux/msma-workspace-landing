@@ -413,12 +413,12 @@ footer{border-top:1px solid var(--line);padding:48px 0 40px;color:var(--dim);fon
 }
 .auth-passwrap{position:relative}
 .auth-passwrap input{padding-right:44px}
-#auth-toggle{
+.pass-toggle{
   position:absolute;top:0;right:0;height:100%;width:40px;background:none;border:none;
   color:var(--grey);cursor:pointer;font-size:.95rem;
 }
-#auth-toggle:hover{color:var(--white)}
-#auth-toggle.on{color:var(--lime)}
+.pass-toggle:hover{color:var(--white)}
+.pass-toggle.on{color:var(--lime)}
 .auth-error{
   background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);
   font-size:.78rem;border-radius:8px;padding:9px 12px;margin-top:14px;
@@ -737,7 +737,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
         <label class="auth-label" for="auth-pass">Password</label>
         <div class="auth-passwrap">
           <input id="auth-pass" type="password" autocomplete="current-password" required>
-          <button type="button" id="auth-toggle" aria-label="Show password">👁</button>
+          <button type="button" class="pass-toggle" aria-label="Show password">👁</button>
         </div>
         <div class="auth-error" id="auth-error" role="alert" hidden></div>
         <button class="btn btn-lime auth-submit" id="auth-submit" type="submit">Sign in</button>
@@ -755,9 +755,15 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
         <label class="auth-label" for="setup-username">Username</label>
         <input id="setup-username" type="text" autocomplete="off" spellcheck="false" maxlength="20" required>
         <label class="auth-label" for="setup-pass">Password <span style="color:var(--dim)">(at least 8 characters)</span></label>
-        <input id="setup-pass" type="password" autocomplete="new-password" required>
+        <div class="auth-passwrap">
+          <input id="setup-pass" type="password" autocomplete="new-password" required>
+          <button type="button" class="pass-toggle" aria-label="Show password">👁</button>
+        </div>
         <label class="auth-label" for="setup-pass2">Confirm password</label>
-        <input id="setup-pass2" type="password" autocomplete="new-password" required>
+        <div class="auth-passwrap">
+          <input id="setup-pass2" type="password" autocomplete="new-password" required>
+          <button type="button" class="pass-toggle" aria-label="Show password">👁</button>
+        </div>
         <div class="auth-error" id="setup-error" role="alert" hidden></div>
         <button class="btn btn-lime auth-submit" id="setup-submit" type="submit">Create account</button>
       </form>
@@ -1142,11 +1148,14 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     }
   });
 
-  document.getElementById('auth-toggle').addEventListener('click', function(){
-    var show = passEl.type === 'password';
-    passEl.type = show ? 'text' : 'password';
-    this.classList.toggle('on', show);
-    this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  document.querySelectorAll('.pass-toggle').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var input = btn.parentElement.querySelector('input');
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.classList.toggle('on', show);
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
   });
 
   var ERR = {
