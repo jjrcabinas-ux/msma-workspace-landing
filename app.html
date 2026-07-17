@@ -28,6 +28,7 @@
   --blue:#60A5FA;
 }
 *{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none !important}
 html,body{height:100%}
 body{
   background:var(--bg);color:var(--white);
@@ -515,6 +516,11 @@ var CLUSTERS = ['RPM', 'VCM', 'ADS', 'INTERN'];
 var membersUnsub = null;
 
 function renderMembers(){
+  if (!IS_ADMIN) {
+    main.innerHTML = '<div class="board-head"><h1>Members</h1></div><div style="height:20px"></div>' +
+      '<div class="soonboard"><b>Admins only</b>This page is restricted to the workspace administrator.</div>';
+    return;
+  }
   main.innerHTML = '<div class="board-head"><h1>Members</h1>' +
     '<div class="desc">Who can create a workspace account, and which cluster they belong to. Only the admin sees this page.</div></div>' +
     '<div style="height:16px"></div>' +
