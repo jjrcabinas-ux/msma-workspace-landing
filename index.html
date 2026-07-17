@@ -135,6 +135,7 @@ header{
 .hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:84px}
 
 /* ---- hero dashboard screenshot ---- */
+.shot-zoom{transform-origin:50% 0;will-change:transform}
 .shot-frame{
   position:relative;margin:0 auto;max-width:980px;
   border-radius:16px;
@@ -396,6 +397,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
         <a class="btn btn-ghost" href="#features">Learn more ↓</a>
       </div>
 
+      <div class="shot-zoom">
       <div class="shot-frame reveal">
         <div class="shot">
           <div class="shot-top">
@@ -432,6 +434,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </section>
@@ -755,6 +758,25 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     })();
   }
   setTimeout(deleteItem, 2200);
+})();
+(function(){
+  var el = document.querySelector('.shot-zoom');
+  if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var ticking = false;
+  function update(){
+    ticking = false;
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight;
+    // 0 when the mock's top is near the bottom of the viewport, 1 once it has risen to ~35% from the top
+    var p = (vh * 0.95 - r.top) / (vh * 0.6);
+    p = Math.max(0, Math.min(1, p));
+    el.style.transform = 'scale(' + (0.92 + 0.08 * p).toFixed(4) + ')';
+  }
+  window.addEventListener('scroll', function(){
+    if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }, { passive: true });
+  window.addEventListener('resize', update);
+  update();
 })();
 </script>
 </body>
