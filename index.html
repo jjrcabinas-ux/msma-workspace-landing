@@ -358,6 +358,47 @@ footer{border-top:1px solid var(--line);padding:48px 0 40px;color:var(--dim);fon
 .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+/* ---------------- post-login warp animation ---------------- */
+#warpOverlay{
+  position:fixed;inset:0;z-index:120;display:none;
+  align-items:center;justify-content:center;overflow:hidden;
+  background:
+    radial-gradient(820px 520px at 50% 38%, rgba(163,230,53,.13), transparent 60%),
+    linear-gradient(158deg,#0B1424 0%,#0A1420 46%,#070D17 100%);
+  opacity:1;transition:opacity .45s ease;
+}
+#warpOverlay.show{display:flex}
+.warp-stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:24px}
+.warp-monitor{
+  filter:drop-shadow(0 0 26px rgba(163,230,53,.4));
+  animation:warpPulse 1.1s ease-in-out infinite;
+  transition:filter .3s ease,transform .3s ease;
+}
+#warpOverlay.finish .warp-monitor{
+  filter:drop-shadow(0 0 60px rgba(212,255,140,.95)) brightness(1.5);
+  transform:scale(1.07);
+  animation:none;
+}
+@keyframes warpPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+.warp-caption{color:rgba(233,244,215,.78);font-weight:700;font-size:.95rem;letter-spacing:.08em}
+.warp-dots::after{content:"";animation:warpDots 1.2s steps(4,end) infinite}
+@keyframes warpDots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}100%{content:""}}
+.warp-docs{position:absolute;inset:0;z-index:1;pointer-events:none}
+.warp-doc{
+  position:absolute;top:50%;left:50%;width:76px;padding:9px 10px 10px;
+  background:#fff;border-radius:6px;box-shadow:0 8px 22px rgba(0,0,0,.45);
+  opacity:0;animation:warpSuck 1s cubic-bezier(.55,.06,.68,.19) both;
+}
+.warp-doc b{display:block;font-size:.6rem;font-weight:800;color:#4D7C0F;letter-spacing:.04em;margin-bottom:5px}
+.warp-doc i{display:block;height:3px;border-radius:2px;background:#D7DEE5;margin-top:3px}
+.warp-doc i:last-child{width:62%}
+@keyframes warpSuck{
+  0%  {transform:translate(calc(-50% + var(--sx)), calc(-50% + var(--sy))) rotate(var(--sr)) scale(1);opacity:0}
+  12% {opacity:1}
+  55% {transform:translate(calc(-50% + var(--mx)), calc(-50% + var(--my))) rotate(calc(var(--er) * .45)) scale(.55);opacity:1}
+  100%{transform:translate(-50%,-50%) rotate(var(--er)) scale(.04);opacity:.1}
+}
+
 /* ---------------- auth modal ---------------- */
 .auth-overlay[hidden]{display:none}
 .auth-overlay{
@@ -723,6 +764,27 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
     </div>
   </div>
 </footer>
+
+<div id="warpOverlay" aria-hidden="true">
+  <div class="warp-docs" id="warpDocs"></div>
+  <div class="warp-stage">
+    <svg class="warp-monitor" width="170" height="146" viewBox="0 0 170 146" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="warpScr" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#14290B"/>
+          <stop offset="55%" stop-color="#65A30D"/>
+          <stop offset="100%" stop-color="#1A3609"/>
+        </linearGradient>
+      </defs>
+      <rect x="10" y="8" width="150" height="100" rx="12" fill="#0E1929" stroke="rgba(212,255,140,.55)" stroke-width="2"/>
+      <rect x="20" y="18" width="130" height="80" rx="7" fill="url(#warpScr)"/>
+      <text x="85" y="63" text-anchor="middle" fill="#ECFCCB" font-size="15" font-weight="800" letter-spacing="3">MSMA</text>
+      <rect x="71" y="110" width="28" height="13" rx="3" fill="#14202F"/>
+      <rect x="50" y="125" width="70" height="8" rx="4" fill="#14202F"/>
+    </svg>
+    <div class="warp-caption"><span id="warpCaption">Entering MSMA Workspace</span><span class="warp-dots"></span></div>
+  </div>
+</div>
 
 <div class="auth-overlay" id="auth-overlay" hidden>
   <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
@@ -1099,7 +1161,42 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     viewSetup.hidden = true;
     viewLogin.hidden = !!user;
     viewPicker.hidden = !user;
-    if (user) window.location.href = '/app';
+    if (user) goWorkspace();
+  }
+
+  /* Post-login warp: documents absorbed into the computer, then redirect */
+  var warping = false;
+  function goWorkspace(){
+    if (warping) return;
+    warping = true;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.location.href = '/app';
+      return;
+    }
+    var ov = document.getElementById('warpOverlay');
+    var wrap = document.getElementById('warpDocs');
+    wrap.innerHTML = '';
+    var forms = ['1601-C','2550Q','TASKS','AUDIT','BOOKS','0619-E','1702Q','CLIENTS','1601-C','2550Q','PAYROLL','0619-E','FS','1604-C'];
+    var R = Math.max(window.innerWidth, window.innerHeight) * 0.55;
+    forms.forEach(function(f, i){
+      var d = document.createElement('div');
+      d.className = 'warp-doc';
+      var ang = (i / forms.length) * Math.PI * 2 + Math.random() * 0.45;
+      var dist = R * (0.85 + Math.random() * 0.45);
+      d.style.setProperty('--sx', Math.round(Math.cos(ang) * dist) + 'px');
+      d.style.setProperty('--sy', Math.round(Math.sin(ang) * dist * 0.72) + 'px');
+      d.style.setProperty('--mx', Math.round(Math.cos(ang + 1.3) * 70) + 'px');
+      d.style.setProperty('--my', Math.round(Math.sin(ang + 1.3) * 46) + 'px');
+      d.style.setProperty('--sr', Math.round(Math.random() * 44 - 22) + 'deg');
+      d.style.setProperty('--er', Math.round(200 + Math.random() * 340) + 'deg');
+      d.style.animationDelay = (Math.random() * 1.0).toFixed(2) + 's';
+      d.style.animationDuration = (0.85 + Math.random() * 0.5).toFixed(2) + 's';
+      d.innerHTML = '<b>' + f + '</b><i></i><i></i><i></i>';
+      wrap.appendChild(d);
+    });
+    ov.classList.add('show');
+    setTimeout(function(){ ov.classList.add('finish'); }, 1950);
+    setTimeout(function(){ window.location.href = '/app'; }, 2350);
   }
   function showSetup(user){
     viewLogin.hidden = true;
@@ -1226,7 +1323,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
       // Also record it on the user profile — the workspace checks this.
       return db.collection('users').doc(user.uid).set({ username: uname, email: user.email }, { merge: true });
     }).then(function(){
-      window.location.href = '/app';
+      goWorkspace();
     }).catch(function(err){
       if (err.code === 'msma/username-taken') fail('That username is already taken — try another.');
       else if (err.code === 'auth/weak-password') fail('That password is too weak — use at least 8 characters with some variety.');
