@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Staff allowlist — keep in sync with ALLOWED_GOOGLE in index.html/app.html.
+    // Admin-created email/password accounts must also be listed here.
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email.lower() in [
+          'jjrcabinas@gmail.com'
+        ];
+    }
+    match /boards/{board} {
+      allow read, write: if isStaff();
+    }
+    // Username -> email mapping. Single-doc reads are open so the login
+    // form can resolve a username before authentication; listing is blocked.
+    match /usernames/{username} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isStaff() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email;
+      allow update, delete: if isStaff() && resource.data.uid == request.auth.uid;
+    }
+    match /users/{uid} {
+      allow read, write: if isStaff() && request.auth.uid == uid;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

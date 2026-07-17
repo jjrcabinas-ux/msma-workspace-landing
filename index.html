@@ -731,14 +731,9 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
     <div id="auth-view-login">
       <h3 id="auth-title">Sign in to MSMA Workspace</h3>
       <p class="auth-sub">Access is restricted to MSMA personnel.</p>
-      <button type="button" class="auth-google" id="auth-google">
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        Continue with Google
-      </button>
-      <div class="auth-divider"><span>or sign in with email</span></div>
       <form id="auth-form" novalidate>
-        <label class="auth-label" for="auth-email">Email</label>
-        <input id="auth-email" type="email" autocomplete="email" inputmode="email" required>
+        <label class="auth-label" for="auth-email">Username or email</label>
+        <input id="auth-email" type="text" autocomplete="username" required>
         <label class="auth-label" for="auth-pass">Password</label>
         <div class="auth-passwrap">
           <input id="auth-pass" type="password" autocomplete="current-password" required>
@@ -746,6 +741,25 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
         </div>
         <div class="auth-error" id="auth-error" role="alert" hidden></div>
         <button class="btn btn-lime auth-submit" id="auth-submit" type="submit">Sign in</button>
+      </form>
+      <div class="auth-divider"><span>first time here?</span></div>
+      <button type="button" class="auth-google" id="auth-google">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Set up your account with Google
+      </button>
+    </div>
+    <div id="auth-view-setup" hidden>
+      <h3>Create your login</h3>
+      <p class="auth-sub">Verified as <b id="setup-email"></b>.<br>Choose the username and password you'll use to sign in.</p>
+      <form id="setup-form" novalidate>
+        <label class="auth-label" for="setup-username">Username</label>
+        <input id="setup-username" type="text" autocomplete="off" spellcheck="false" maxlength="20" required>
+        <label class="auth-label" for="setup-pass">Password <span style="color:var(--dim)">(at least 8 characters)</span></label>
+        <input id="setup-pass" type="password" autocomplete="new-password" required>
+        <label class="auth-label" for="setup-pass2">Confirm password</label>
+        <input id="setup-pass2" type="password" autocomplete="new-password" required>
+        <div class="auth-error" id="setup-error" role="alert" hidden></div>
+        <button class="btn btn-lime auth-submit" id="setup-submit" type="submit">Create account</button>
       </form>
     </div>
     <div id="auth-view-picker" hidden>
@@ -1037,7 +1051,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   function loadFirebase(){
     if (fb) return Promise.resolve(fb);
     if (fbLoading) return fbLoading;
-    fbLoading = ['firebase-app-compat.js', 'firebase-auth-compat.js'].reduce(function(chain, file){
+    fbLoading = ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js'].reduce(function(chain, file){
       return chain.then(function(){
         return new Promise(function(ok, fail){
           var s = document.createElement('script');
@@ -1056,6 +1070,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
           showError('This Google account isn’t authorized for MSMA Workspace. Contact the administrator.');
           return;
         }
+        if (user && !hasPassword(user)) { showSetup(user); return; }
         setView(user);
       });
       return fb;
@@ -1066,10 +1081,27 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     return fbLoading;
   }
 
+  var viewSetup = document.getElementById('auth-view-setup');
+  var setupForm = document.getElementById('setup-form');
+  var setupErr = document.getElementById('setup-error');
+  var setupSubmit = document.getElementById('setup-submit');
+
+  function hasPassword(user){
+    return (user.providerData || []).some(function(p){ return p.providerId === 'password'; });
+  }
   function setView(user){
+    viewSetup.hidden = true;
     viewLogin.hidden = !!user;
     viewPicker.hidden = !user;
     if (user) window.location.href = '/app';
+  }
+  function showSetup(user){
+    viewLogin.hidden = true;
+    viewPicker.hidden = true;
+    viewSetup.hidden = false;
+    setupErr.hidden = true;
+    document.getElementById('setup-email').textContent = user.email;
+    document.getElementById('setup-username').focus();
   }
   function openModal(){
     lastFocus = document.activeElement;
@@ -1118,9 +1150,9 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   });
 
   var ERR = {
-    'auth/invalid-credential': 'Incorrect email or password.',
-    'auth/wrong-password': 'Incorrect email or password.',
-    'auth/user-not-found': 'Incorrect email or password.',
+    'auth/invalid-credential': 'Incorrect username or password.',
+    'auth/wrong-password': 'Incorrect username or password.',
+    'auth/user-not-found': 'Incorrect username or password.',
     'auth/invalid-email': 'Please enter a valid email address.',
     'auth/user-disabled': 'This account has been disabled. Contact the administrator.',
     'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
@@ -1131,12 +1163,17 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   form.addEventListener('submit', function(e){
     e.preventDefault();
     errEl.hidden = true;
-    var email = emailEl.value.trim(), pass = passEl.value;
-    if (!email || !pass) { showError('Please enter your email and password.'); return; }
+    var id = emailEl.value.trim(), pass = passEl.value;
+    if (!id || !pass) { showError('Please enter your username and password.'); return; }
     submitEl.disabled = true;
     submitEl.textContent = 'Signing in…';
     loadFirebase().then(function(f){
-      return f.auth().signInWithEmailAndPassword(email, pass);
+      if (id.indexOf('@') !== -1) return f.auth().signInWithEmailAndPassword(id, pass);
+      // Username login: resolve to the registered email first.
+      return f.firestore().collection('usernames').doc(id.toLowerCase()).get().then(function(doc){
+        if (!doc.exists) { var e2 = new Error('no-user'); e2.code = 'auth/user-not-found'; throw e2; }
+        return f.auth().signInWithEmailAndPassword(doc.data().email, pass);
+      });
     }).then(function(){
       passEl.value = '';
     }).catch(function(err){
@@ -1144,6 +1181,46 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     }).finally(function(){
       submitEl.disabled = false;
       submitEl.textContent = 'Sign in';
+    });
+  });
+
+  setupForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    setupErr.hidden = true;
+    var uname = document.getElementById('setup-username').value.trim().toLowerCase();
+    var p1 = document.getElementById('setup-pass').value;
+    var p2 = document.getElementById('setup-pass2').value;
+    function fail(msg){ setupErr.textContent = msg; setupErr.hidden = false; }
+    if (!/^[a-z0-9._-]{3,20}$/.test(uname)) { fail('Username must be 3–20 characters: letters, numbers, dots, dashes, or underscores.'); return; }
+    if (p1.length < 8) { fail('Password must be at least 8 characters.'); return; }
+    if (p1 !== p2) { fail('Passwords don’t match.'); return; }
+    var user = fb && fb.auth().currentUser;
+    if (!user) { fail('Your Google session expired — close this and start again.'); return; }
+    setupSubmit.disabled = true;
+    setupSubmit.textContent = 'Creating account…';
+    var db = fb.firestore();
+    var unameRef = db.collection('usernames').doc(uname);
+    unameRef.get().then(function(doc){
+      if (doc.exists && doc.data().uid !== user.uid) { var e2 = new Error('taken'); e2.code = 'msma/username-taken'; throw e2; }
+      return unameRef.set({ uid: user.uid, email: user.email });
+    }).catch(function(err){
+      // Firestore not ready yet (no DB / rules): continue without a username.
+      if (err.code === 'msma/username-taken') throw err;
+      console.warn('Username save unavailable:', err && err.code);
+      return null;
+    }).then(function(){
+      var cred = fb.auth.EmailAuthProvider.credential(user.email, p1);
+      return user.linkWithCredential(cred);
+    }).then(function(){
+      window.location.href = '/app';
+    }).catch(function(err){
+      if (err.code === 'msma/username-taken') fail('That username is already taken — try another.');
+      else if (err.code === 'auth/weak-password') fail('That password is too weak — use at least 8 characters with some variety.');
+      else if (err.code === 'auth/credential-already-in-use' || err.code === 'auth/email-already-in-use') fail('This account already has a password — sign in with your username and password instead.');
+      else fail('Something went wrong creating your account. Please try again.');
+    }).finally(function(){
+      setupSubmit.disabled = false;
+      setupSubmit.textContent = 'Create account';
     });
   });
 
