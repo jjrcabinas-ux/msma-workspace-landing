@@ -770,7 +770,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     // 0 when the mock's top is near the bottom of the viewport, 1 once it has risen to ~35% from the top
     var p = (vh * 0.95 - r.top) / (vh * 0.6);
     p = Math.max(0, Math.min(1, p));
-    el.style.transform = 'scale(' + (0.92 + 0.08 * p).toFixed(4) + ')';
+    el.style.transform = 'scale(' + (0.90 + 0.16 * p).toFixed(4) + ')';
   }
   window.addEventListener('scroll', function(){
     if (!ticking) { ticking = true; requestAnimationFrame(update); }
