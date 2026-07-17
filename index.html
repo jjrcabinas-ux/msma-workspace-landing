@@ -358,6 +358,72 @@ footer{border-top:1px solid var(--line);padding:48px 0 40px;color:var(--dim);fon
 .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+/* ---------------- auth modal ---------------- */
+.auth-overlay{
+  position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,7,13,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  opacity:0;transition:opacity .22s ease;padding:20px;
+}
+.auth-overlay.open{opacity:1}
+.auth-modal{
+  position:relative;width:100%;max-width:400px;background:var(--card);
+  border:1px solid var(--line-strong);border-radius:var(--radius);padding:32px 28px 28px;
+  transform:translateY(12px) scale(.97);transition:transform .22s ease;
+  box-shadow:0 30px 90px rgba(0,0,0,.6);
+}
+.auth-overlay.open .auth-modal{transform:none}
+@media(prefers-reduced-motion:reduce){
+  .auth-overlay,.auth-modal{transition:none}
+}
+.auth-close{
+  position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;
+  background:none;border:1px solid transparent;color:var(--grey);font-size:1.1rem;cursor:pointer;
+}
+.auth-close:hover{color:var(--white);border-color:var(--line-strong)}
+.auth-logo{height:34px;width:auto;display:block;margin:0 auto 18px}
+.auth-modal h3{font-size:1.15rem;text-align:center;letter-spacing:-.02em}
+.auth-sub{font-size:.8rem;color:var(--grey);text-align:center;margin:6px 0 20px}
+.auth-label{display:block;font-size:.74rem;color:var(--grey);margin:14px 0 6px}
+.auth-modal input{
+  width:100%;background:var(--card-2);border:1px solid var(--line-strong);border-radius:10px;
+  padding:11px 12px;color:var(--white);font-size:.92rem;font-family:inherit;
+}
+.auth-modal input:focus{outline:2px solid var(--lime);outline-offset:1px;border-color:transparent}
+.auth-passwrap{position:relative}
+.auth-passwrap input{padding-right:44px}
+#auth-toggle{
+  position:absolute;top:0;right:0;height:100%;width:40px;background:none;border:none;
+  color:var(--grey);cursor:pointer;font-size:.95rem;
+}
+#auth-toggle:hover{color:var(--white)}
+.auth-error{
+  background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);
+  font-size:.78rem;border-radius:8px;padding:9px 12px;margin-top:14px;
+}
+.auth-submit{width:100%;margin-top:18px;justify-content:center;text-align:center;border:none;cursor:pointer;font-family:inherit;font-size:.95rem}
+.auth-submit[disabled]{opacity:.6;cursor:wait}
+.auth-modules{display:grid;gap:8px;margin:18px 0 4px}
+.auth-mod{
+  display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;
+  background:var(--card-2);border:1px solid var(--line);color:var(--white);
+  font-size:.88rem;font-weight:600;transition:border-color .15s,transform .15s;
+}
+.auth-mod:hover{border-color:rgba(163,230,53,.35);transform:translateY(-1px)}
+.auth-mod .ico{color:var(--lime);font-size:1rem}
+.auth-mod.disabled{opacity:.45;pointer-events:none}
+.auth-mod .soon{
+  margin-left:auto;font-size:.62rem;font-family:'IBM Plex Mono',monospace;
+  color:var(--grey);border:1px solid var(--line-strong);border-radius:5px;padding:2px 7px;
+}
+.auth-signout{
+  display:block;margin:16px auto 0;background:none;border:none;color:var(--grey);
+  font-size:.78rem;cursor:pointer;font-family:inherit;text-decoration:underline;
+}
+.auth-signout:hover{color:var(--white)}
+@media(max-width:480px){
+  .auth-overlay{padding:12px;align-items:flex-end}
+  .auth-modal{max-width:none;padding:28px 20px 24px}
+}
 .shot-main .stat-row,.shot-main .trow,.shot-h b{transition:opacity .25s ease}
 .cpill{cursor:pointer;transition:border-color .15s,color .15s}
 .cpill:not(.on):hover{border-color:rgba(163,197,255,.35);color:var(--white)}
@@ -635,6 +701,40 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
   </div>
 </footer>
 
+<div class="auth-overlay" id="auth-overlay" hidden>
+  <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <button class="auth-close" id="auth-close" aria-label="Close sign-in dialog">✕</button>
+    <img class="auth-logo" src="/logo.png" alt="MSMA logo">
+    <div id="auth-view-login">
+      <h3 id="auth-title">Sign in to MSMA Workspace</h3>
+      <p class="auth-sub">Access is restricted to MSMA personnel.</p>
+      <form id="auth-form" novalidate>
+        <label class="auth-label" for="auth-email">Email</label>
+        <input id="auth-email" type="email" autocomplete="email" inputmode="email" required>
+        <label class="auth-label" for="auth-pass">Password</label>
+        <div class="auth-passwrap">
+          <input id="auth-pass" type="password" autocomplete="current-password" required>
+          <button type="button" id="auth-toggle" aria-label="Show password">👁</button>
+        </div>
+        <div class="auth-error" id="auth-error" role="alert" hidden></div>
+        <button class="btn btn-lime auth-submit" id="auth-submit" type="submit">Sign in</button>
+      </form>
+    </div>
+    <div id="auth-view-picker" hidden>
+      <h3>Welcome back</h3>
+      <p class="auth-sub" id="auth-user-email"></p>
+      <div class="auth-modules">
+        <a class="auth-mod" href="https://tasks.msma.work"><span class="ico">☑</span> Employee Task Monitoring</a>
+        <a class="auth-mod disabled" href="#" tabindex="-1" aria-disabled="true"><span class="ico">▣</span> Intern Task Monitoring <span class="soon">SOON</span></a>
+        <a class="auth-mod" href="https://tax.msma.work"><span class="ico">◫</span> Tax Compliance</a>
+        <a class="auth-mod disabled" href="#" tabindex="-1" aria-disabled="true"><span class="ico">◈</span> Audit <span class="soon">SOON</span></a>
+        <a class="auth-mod disabled" href="#" tabindex="-1" aria-disabled="true"><span class="ico">⋯</span> Others <span class="soon">SOON</span></a>
+      </div>
+      <button class="auth-signout" id="auth-signout">Sign out</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ---------- drifting star particles, two depth layers (hero) ----------
 function starLayer(canvasId, opts){
@@ -880,6 +980,137 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     }, { threshold: 0.5 });
     hintIO.observe(frame);
   }
+})();
+(function(){
+  // Sign-in modal: intercepts Sign in / Open Workspace links (hrefs unchanged
+  // as a no-JS fallback), authenticates against Firebase (msma-workspace),
+  // then shows the module picker.
+  var overlay = document.getElementById('auth-overlay');
+  if (!overlay) return;
+  var modal = overlay.querySelector('.auth-modal');
+  var viewLogin = document.getElementById('auth-view-login');
+  var viewPicker = document.getElementById('auth-view-picker');
+  var form = document.getElementById('auth-form');
+  var emailEl = document.getElementById('auth-email');
+  var passEl = document.getElementById('auth-pass');
+  var errEl = document.getElementById('auth-error');
+  var submitEl = document.getElementById('auth-submit');
+  var userEmailEl = document.getElementById('auth-user-email');
+  var lastFocus = null, fb = null, fbLoading = null;
+
+  var FB_CONFIG = {
+    apiKey: 'AIzaSyBlXYkyP0bcHEsbU8bhYWnr9kvFluiP0f0',
+    authDomain: 'msma-workspace.firebaseapp.com',
+    projectId: 'msma-workspace',
+    appId: '1:33439738161:web:a3f3ab244bd17f4cc9e810'
+  };
+  function loadFirebase(){
+    if (fb) return Promise.resolve(fb);
+    if (fbLoading) return fbLoading;
+    fbLoading = ['firebase-app-compat.js', 'firebase-auth-compat.js'].reduce(function(chain, file){
+      return chain.then(function(){
+        return new Promise(function(ok, fail){
+          var s = document.createElement('script');
+          s.src = 'https://www.gstatic.com/firebasejs/10.14.1/' + file;
+          s.onload = ok; s.onerror = fail;
+          document.head.appendChild(s);
+        });
+      });
+    }, Promise.resolve()).then(function(){
+      window.firebase.initializeApp(FB_CONFIG);
+      fb = window.firebase;
+      fb.auth().onAuthStateChanged(function(user){ setView(user); });
+      return fb;
+    }).catch(function(){
+      fbLoading = null;
+      throw new Error('network');
+    });
+    return fbLoading;
+  }
+
+  function setView(user){
+    viewLogin.hidden = !!user;
+    viewPicker.hidden = !user;
+    if (user) userEmailEl.textContent = user.email;
+  }
+  function openModal(){
+    lastFocus = document.activeElement;
+    overlay.hidden = false;
+    requestAnimationFrame(function(){ overlay.classList.add('open'); });
+    document.body.style.overflow = 'hidden';
+    errEl.hidden = true;
+    loadFirebase().then(function(f){
+      setView(f.auth().currentUser);
+      if (!f.auth().currentUser) emailEl.focus();
+    }).catch(function(){
+      setView(null);
+      emailEl.focus();
+    });
+  }
+  function closeModal(){
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(function(){ overlay.hidden = true; }, 240);
+    if (lastFocus) lastFocus.focus();
+  }
+
+  document.querySelectorAll('a[href^="https://app.msma.work"]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+  });
+  document.getElementById('auth-close').addEventListener('click', closeModal);
+  overlay.addEventListener('mousedown', function(e){ if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if (overlay.hidden) return;
+    if (e.key === 'Escape') { closeModal(); return; }
+    if (e.key === 'Tab') {
+      var focusables = modal.querySelectorAll('button:not([disabled]),input,a[href]:not([tabindex="-1"])');
+      var list = [].filter.call(focusables, function(el){ return el.offsetParent !== null; });
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  document.getElementById('auth-toggle').addEventListener('click', function(){
+    var show = passEl.type === 'password';
+    passEl.type = show ? 'text' : 'password';
+    this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
+
+  var ERR = {
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/wrong-password': 'Incorrect email or password.',
+    'auth/user-not-found': 'Incorrect email or password.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/user-disabled': 'This account has been disabled. Contact the administrator.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
+    'auth/network-request-failed': 'Connection problem. Check your internet and try again.'
+  };
+  function showError(msg){ errEl.textContent = msg; errEl.hidden = false; }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    errEl.hidden = true;
+    var email = emailEl.value.trim(), pass = passEl.value;
+    if (!email || !pass) { showError('Please enter your email and password.'); return; }
+    submitEl.disabled = true;
+    submitEl.textContent = 'Signing in…';
+    loadFirebase().then(function(f){
+      return f.auth().signInWithEmailAndPassword(email, pass);
+    }).then(function(){
+      passEl.value = '';
+    }).catch(function(err){
+      showError(ERR[err.code] || 'Sign-in is unavailable right now. Please try again.');
+    }).finally(function(){
+      submitEl.disabled = false;
+      submitEl.textContent = 'Sign in';
+    });
+  });
+
+  document.getElementById('auth-signout').addEventListener('click', function(){
+    if (fb) fb.auth().signOut();
+  });
 })();
 </script>
 </body>
