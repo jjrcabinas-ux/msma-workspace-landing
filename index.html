@@ -135,7 +135,7 @@ header{
 .hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:84px}
 
 /* ---- hero dashboard screenshot ---- */
-.shot-zoom{transform-origin:50% 0;will-change:transform}
+.shot-zoom{transform-origin:50% 0;will-change:transform,opacity}
 .shot-frame{
   position:relative;margin:0 auto;max-width:980px;
   border-radius:16px;
@@ -768,23 +768,31 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   setTimeout(deleteItem, 2200);
 })();
 (function(){
+  // GSAP-ScrollTrigger-style scrubbed timeline (dependency-free):
+  // scroll position sets a target progress; the displayed value chases it
+  // with lerp smoothing (like scrub: 1), driving scale + opacity + lift.
   var el = document.querySelector('.shot-zoom');
   if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var ticking = false;
-  function update(){
-    ticking = false;
+  var target = 0, value = 0, raf = null;
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function measure(){
     var r = el.getBoundingClientRect();
     var vh = window.innerHeight;
-    // 0 when the mock's top is near the bottom of the viewport, 1 once it has risen to ~35% from the top
-    var p = (vh * 0.95 - r.top) / (vh * 0.6);
-    p = Math.max(0, Math.min(1, p));
-    el.style.transform = 'scale(' + (0.90 + 0.16 * p).toFixed(4) + ')';
+    var p = (vh * 0.98 - r.top) / (vh * 0.72);
+    target = Math.max(0, Math.min(1, p));
+    if (!raf) raf = requestAnimationFrame(tick);
   }
-  window.addEventListener('scroll', function(){
-    if (!ticking) { ticking = true; requestAnimationFrame(update); }
-  }, { passive: true });
-  window.addEventListener('resize', update);
-  update();
+  function tick(){
+    value += (target - value) * 0.09;
+    if (Math.abs(target - value) < 0.0005) { value = target; raf = null; }
+    else raf = requestAnimationFrame(tick);
+    var e = easeOutCubic(value);
+    el.style.transform = 'translateY(' + ((1 - e) * 34).toFixed(2) + 'px) scale(' + (0.88 + 0.18 * e).toFixed(4) + ')';
+    el.style.opacity = (0.5 + 0.5 * e).toFixed(3);
+  }
+  window.addEventListener('scroll', measure, { passive: true });
+  window.addEventListener('resize', measure);
+  measure();
 })();
 (function(){
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
