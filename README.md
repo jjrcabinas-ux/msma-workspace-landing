@@ -14,6 +14,9 @@ and MSMA Books — plus a new employee task-monitoring module into one app at
 - **Single file:** `index.html`. No build step, no framework, no external JS.
   Inline CSS/JS, Google Fonts via CDN. This is the firm's standard architecture
   across all tools.
+- **Supporting assets:** `404.html` (on-brand not-found page), `og-image.png`
+  (1200×630 social share card, referenced by the Open Graph/Twitter meta tags).
+  Cache and security headers live in `firebase.json`.
 - **Hosting:** Firebase Hosting (project `msma-workspace`), same platform as
   tax.msma.work. Deploy with `firebase deploy --only hosting`. DNS is at
   GoDaddy; apex `msma.work` + `www` redirect are configured as custom domains
