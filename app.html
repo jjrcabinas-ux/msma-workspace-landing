@@ -51,7 +51,7 @@ a{color:inherit;text-decoration:none}
   height:52px;display:flex;align-items:center;gap:14px;padding:0 14px;
   border-bottom:1px solid var(--line);background:var(--bg-soft);
 }
-.tb-brand{display:flex;align-items:flex-end;gap:8px;font-weight:800;font-size:.95rem;letter-spacing:-.02em;white-space:nowrap}
+.tb-brand{display:flex;align-items:flex-end;gap:8px;font-weight:800;font-size:.95rem;letter-spacing:-.02em;white-space:nowrap;line-height:1.05}
 .tb-brand img{height:24px;width:auto;display:block}
 .tb-search{
   flex:1;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:8px;
@@ -88,13 +88,11 @@ a{color:inherit;text-decoration:none}
 }
 .sb-label{font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:12px 10px 6px}
 .sb-item{
-  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
-  color:var(--grey);font-size:.86rem;font-weight:500;cursor:pointer;width:100%;text-align:left;
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;
+  color:var(--grey);font-size:.95rem;font-weight:500;cursor:pointer;width:100%;text-align:left;
 }
 .sb-item:hover{background:var(--card);color:var(--white)}
 .sb-item.active{background:var(--lime-soft);color:var(--lime);font-weight:600}
-.sb-item .dot{width:8px;height:8px;border-radius:3px;flex:none}
-.sb-item .ext{margin-left:auto;font-size:.7rem;color:var(--dim)}
 .sb-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
 
 /* ---------- main / board ---------- */
@@ -211,17 +209,12 @@ a{color:inherit;text-decoration:none}
 
 <div class="shell">
   <nav class="sidebar" id="sidebar">
-    <div class="sb-label">Workspace</div>
-    <button class="sb-item" data-board="dashboard"><span class="dot" style="background:var(--lime)"></span> Dashboard</button>
-    <button class="sb-item" data-board="tasks"><span class="dot" style="background:var(--blue)"></span> Employee Tasks</button>
-    <button class="sb-item" data-board="tax"><span class="dot" style="background:var(--red)"></span> Tax Compliance</button>
-    <button class="sb-item" data-board="audit"><span class="dot" style="background:var(--amber)"></span> Audit Monitoring</button>
-    <button class="sb-item" data-board="books"><span class="dot" style="background:var(--grey)"></span> Books</button>
-    <div class="sb-label">Firm</div>
-    <button class="sb-item" data-board="clients"><span class="dot" style="background:var(--blue)"></span> Client Masterlist</button>
-    <div class="sb-label">Live tools</div>
-    <a class="sb-item" href="https://tasks.msma.work" target="_blank" rel="noopener">☑ Task Monitor <span class="ext">↗</span></a>
-    <a class="sb-item" href="https://tax.msma.work" target="_blank" rel="noopener">◫ Tax Tracker <span class="ext">↗</span></a>
+    <button class="sb-item" data-board="dashboard">Dashboard</button>
+    <button class="sb-item" data-board="tasks">Employee Task Monitoring</button>
+    <button class="sb-item" data-board="tax">Tax Compliance System</button>
+    <button class="sb-item" data-board="audit">Audit</button>
+    <button class="sb-item" data-board="books">Bookkeeping</button>
+    <button class="sb-item" data-board="clients">Client Masterlist</button>
     <div class="sb-foot">
       <button class="sb-item" data-board="settings">⚙ Settings</button>
     </div>
@@ -232,6 +225,7 @@ a{color:inherit;text-decoration:none}
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 /* ---------- auth gate ---------- */
 firebase.initializeApp({
@@ -251,7 +245,9 @@ function isAllowed(user){
 }
 firebase.auth().onAuthStateChanged(function(user){
   if (!user || !isAllowed(user)) { window.location.replace('/'); return; }
-  document.getElementById('gate').remove();
+  var gate = document.getElementById('gate');
+  if (gate) gate.remove();
+  startSync();
   var email = user.email || '';
   var name = user.displayName || email.split('@')[0];
   var initials = name.split(/[\s._-]+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
@@ -287,64 +283,65 @@ var BOARDS = {
         { name: '2550M — monthly VAT filers', chip: '2550M', p: 'LS', s: 'done', due: 'JUL 20' } ] }
     ]
   },
-  tasks: {
-    title: 'Employee Tasks', desc: 'Weekly assignments per cluster. Live data stays in the Task Monitor for now.',
-    groups: [
-      { name: 'RPM Cluster — this week', color: 'var(--blue)', items: [
-        { name: 'Update client PRA schedules', p: 'JC', s: 'working', due: 'FRI' },
-        { name: 'Close out 1601-C attachments', p: 'MA', s: 'done', due: 'WED' },
-        { name: 'Bank recon — 3 clients', p: 'RD', s: 'working', due: 'FRI' } ] },
-      { name: 'VCM Cluster — this week', color: 'var(--lime)', items: [
-        { name: 'Draft engagement letter renewals', p: 'LS', s: 'review', due: 'THU' },
-        { name: 'Payroll import template rollout', p: 'MA', s: 'working', due: 'FRI' } ] }
-    ]
-  },
-  tax: {
-    title: 'Tax Compliance', desc: 'BIR filing pipeline. Live tracker: tax.msma.work.',
-    groups: [
-      { name: 'August filings', color: 'var(--red)', items: [
-        { name: 'Withholding — compensation', chip: '1601-C', p: 'JC', s: 'working', due: 'AUG 10' },
-        { name: 'Withholding — expanded', chip: '0619-E', p: 'MA', s: 'working', due: 'AUG 10' },
-        { name: 'Quarterly VAT', chip: '2550Q', p: 'JC', s: 'review', due: 'AUG 25' },
-        { name: 'Quarterly income tax', chip: '1702Q', p: 'RD', s: 'working', due: 'AUG 29' } ] },
-      { name: 'Annualization prep', color: 'var(--amber)', items: [
-        { name: 'Alphalist data build', chip: '1604-C', p: 'LS', s: 'working', due: 'SEP 15' } ] }
-    ]
-  },
-  audit: {
-    title: 'Audit Monitoring', desc: 'Engagement stages across clients.',
-    groups: [
-      { name: 'Ongoing engagements', color: 'var(--blue)', items: [
-        { name: 'ABC Corp — FY2025 FS audit', p: 'JC', s: 'working', due: 'SEP 30' },
-        { name: 'DEF Trading — interim testing', p: 'MA', s: 'review', due: 'AUG 22' },
-        { name: 'GHI Foods — inventory observation', p: 'RD', s: 'stuck', due: 'AUG 18' } ] },
-      { name: 'Wrap-up', color: 'var(--lime)', items: [
-        { name: 'JKL Realty — report finalization', p: 'LS', s: 'done', due: 'AUG 05' } ] }
-    ]
-  },
-  books: {
-    title: 'Books', desc: 'Monthly closings and bookkeeping runs.',
-    groups: [
-      { name: 'July closings', color: 'var(--amber)', items: [
-        { name: 'MNO Services — books close', p: 'MA', s: 'working', due: 'AUG 15' },
-        { name: 'PQR Retail — books close', p: 'RD', s: 'done', due: 'AUG 08' } ] }
-    ]
-  },
-  clients: {
-    title: 'Client Masterlist', desc: 'Engagement coverage per client.',
-    groups: [
-      { name: 'Active clients', color: 'var(--blue)', items: [
-        { name: 'ABC Corp — audit + tax + books', p: 'JC', s: 'working', due: '—' },
-        { name: 'DEF Trading — tax + books', p: 'MA', s: 'working', due: '—' },
-        { name: 'GHI Foods — audit + tax', p: 'RD', s: 'working', due: '—' },
-        { name: 'JKL Realty — audit', p: 'LS', s: 'done', due: '—' } ] }
-    ]
-  },
+  tasks: { title: 'Employee Task Monitoring', desc: '', soon: 'This module is being built next — weekly assignments and cluster boards will live here.' },
+  tax: { title: 'Tax Compliance System', desc: '', soon: 'This module is being built next — the BIR filing pipeline will live here.' },
+  audit: { title: 'Audit', desc: '', soon: 'This module is being built next — engagement stages across clients will live here.' },
+  books: { title: 'Bookkeeping', desc: '', soon: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
+  clients: { title: 'Client Masterlist', desc: '', soon: 'This module is being built next — engagement coverage per client will live here.' },
   settings: { title: 'Settings', desc: '', soon: 'Workspace settings — user roles, clusters, and module preferences — arrive with the full build.' }
 };
 
 var current = 'dashboard';
 var main = document.getElementById('main');
+
+/* ---------- Firestore sync ---------- */
+var db = firebase.firestore();
+var SYNC_BOARDS = ['dashboard'];
+var seeded = {};
+var syncStarted = false;
+
+function startSync(){
+  if (syncStarted) return;
+  syncStarted = true;
+  SYNC_BOARDS.forEach(function(key){
+    db.collection('boards').doc(key).onSnapshot(function(doc){
+      if (doc.exists) {
+        var d = doc.data();
+        if (d && d.groups) {
+          BOARDS[key].groups = d.groups;
+          if (current === key && !doc.metadata.hasPendingWrites) render(key);
+        }
+      } else if (!seeded[key]) {
+        // First run ever: seed Firestore with the starter data.
+        seeded[key] = true;
+        db.collection('boards').doc(key).set({
+          title: BOARDS[key].title,
+          groups: BOARDS[key].groups
+        }).catch(syncError);
+      }
+    }, syncError);
+  });
+}
+function persist(){
+  if (SYNC_BOARDS.indexOf(current) === -1) return;
+  db.collection('boards').doc(current).set({
+    title: BOARDS[current].title,
+    groups: BOARDS[current].groups
+  }).catch(syncError);
+}
+function syncError(err){
+  console.error('Firestore sync error:', err);
+  var el = document.getElementById('sync-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sync-error';
+    el.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#F87171;font-size:.78rem;padding:9px 16px;border-radius:9px;z-index:60';
+    document.body.appendChild(el);
+  }
+  el.textContent = 'Changes aren’t saving right now — check your connection or contact the administrator.';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.remove(); }, 6000);
+}
 
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
 
@@ -399,6 +396,7 @@ function wireBoard(){
       s.setAttribute('data-s', next);
       s.textContent = STATUS_LABEL[next];
       BOARDS[current].groups[+s.getAttribute('data-gi')].items[+s.getAttribute('data-ii')].s = next;
+      persist();
     });
   });
   main.querySelectorAll('.addrow input').forEach(function(inp){
@@ -406,6 +404,7 @@ function wireBoard(){
       if (e.key !== 'Enter' || !inp.value.trim()) return;
       var gi = +inp.closest('.addrow').getAttribute('data-gi');
       BOARDS[current].groups[gi].items.push({ name: inp.value.trim(), p: 'JC', s: 'working', due: '—' });
+      persist();
       render(current);
     });
   });
