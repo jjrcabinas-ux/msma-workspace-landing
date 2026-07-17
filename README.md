@@ -14,7 +14,10 @@ and MSMA Books — plus a new employee task-monitoring module into one app at
 - **Single file:** `index.html`. No build step, no framework, no external JS.
   Inline CSS/JS, Google Fonts via CDN. This is the firm's standard architecture
   across all tools.
-- **Hosting:** Vercel static deployment. No `vercel.json` needed.
+- **Hosting:** Firebase Hosting (project `msma-workspace`), same platform as
+  tax.msma.work. Deploy with `firebase deploy --only hosting`. DNS is at
+  GoDaddy; apex `msma.work` + `www` redirect are configured as custom domains
+  in the Firebase console.
 - **Style:** Cobalt (joincobalt.com) presentation style — centered hero, glowing
   dashboard mock, bento feature grid, AI assistant section, closing CTA, and a
   two-layer animated particle star field in the hero.
