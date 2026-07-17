@@ -234,9 +234,11 @@ firebase.initializeApp({
   projectId: 'msma-workspace',
   appId: '1:33439738161:web:a3f3ab244bd17f4cc9e810'
 });
+var ADMIN_EMAILS = ['jjrcabinas@gmail.com'];
 var ALLOWED_GOOGLE = [
   'jjrcabinas@gmail.com'
 ];
+var IS_ADMIN = false;
 function isAllowed(user){
   if (!user) return false;
   var viaGoogle = (user.providerData || []).some(function(p){ return p.providerId === 'google.com'; });
@@ -251,9 +253,16 @@ firebase.auth().onAuthStateChanged(function(user){
   var email = user.email || '';
   var name = user.displayName || email.split('@')[0];
   var initials = name.split(/[\s._-]+/).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+  IS_ADMIN = ADMIN_EMAILS.indexOf(email.toLowerCase()) !== -1;
   document.getElementById('avatar').textContent = initials || '?';
-  document.getElementById('who-name').textContent = name;
+  document.getElementById('who-name').textContent = name + (IS_ADMIN ? ' · Admin' : '');
   document.getElementById('who-email').textContent = email;
+  if (IS_ADMIN) {
+    var badge = document.createElement('span');
+    badge.textContent = 'ADMIN';
+    badge.style.cssText = 'margin-left:8px;font-family:IBM Plex Mono,monospace;font-size:.58rem;color:var(--lime);background:var(--lime-soft);border:1px solid rgba(163,230,53,.3);border-radius:5px;padding:2px 6px;vertical-align:2px';
+    document.querySelector('.tb-brand').appendChild(badge);
+  }
 });
 document.getElementById('signout').addEventListener('click', function(){
   firebase.auth().signOut().then(function(){ window.location.replace('/'); });
