@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSMA Workspace — Unleash the power of intuitive compliance</title>
+<meta name="description" content="MSMA Workspace unifies tax compliance, audit monitoring, task tracking, and bookkeeping for Mora Sanchez Meñoza and Associates.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23A3E635'/%3E%3Ctext x='32' y='45' font-family='Arial,Helvetica,sans-serif' font-size='38' font-weight='800' text-anchor='middle' fill='%23070D17'%3EM%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070D17;
+  --bg-soft:#0B1424;
+  --card:#0E1929;
+  --card-2:#0A1420;
+  --line:rgba(163,197,255,.10);
+  --line-strong:rgba(163,197,255,.18);
+  --white:#F4F7FB;
+  --grey:#93A3B8;
+  --dim:#5C6B80;
+  --lime:#A3E635;
+  --lime-soft:rgba(163,230,53,.14);
+  --red:#F87171;
+  --amber:#FBBF24;
+  --blue:#60A5FA;
+  --max:1120px;
+  --radius:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:'Inter',system-ui,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+.mono{font-family:'IBM Plex Mono',monospace}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+h1,h2,h3{letter-spacing:-.03em;line-height:1.1}
+
+/* ---------------- nav ---------------- */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(7,13,23,.72);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1rem;letter-spacing:-.02em}
+.brand-mark{
+  width:30px;height:30px;border-radius:9px;
+  background:linear-gradient(135deg,#C7F464 0%,#7CC414 100%);
+  display:grid;place-items:center;color:#0A1628;font-weight:800;font-size:.85rem;
+}
+.nav-links{display:flex;gap:30px;font-size:.9rem;color:var(--grey);font-weight:500}
+.nav-links a{transition:color .15s}
+.nav-links a:hover{color:var(--white)}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 24px;border-radius:999px;
+  font-weight:600;font-size:.92rem;letter-spacing:-.01em;
+  transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+  cursor:pointer;border:0;
+}
+.btn-white{background:var(--white);color:#0A1628}
+.btn-white:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(244,247,251,.18)}
+.btn-lime{background:var(--lime);color:#0A1628}
+.btn-lime:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(163,230,53,.28)}
+.btn-ghost{color:var(--grey);padding:11px 10px}
+.btn-ghost:hover{color:var(--white)}
+.btn-sm{padding:8px 18px;font-size:.85rem}
+@media(max-width:760px){.nav-links{display:none}}
+
+/* ---------------- hero ---------------- */
+.hero{position:relative;text-align:center;padding:110px 0 0}
+#stars{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;display:block;
+}
+#stars-front{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:3;display:block;
+}
+.hero::before{
+  content:"";position:absolute;inset:-200px -20% auto;height:640px;
+  background:
+    radial-gradient(ellipse 55% 60% at 50% 8%, rgba(163,230,53,.13), transparent 60%),
+    radial-gradient(ellipse 40% 50% at 68% 20%, rgba(96,165,250,.10), transparent 60%);
+  pointer-events:none;
+}
+.hero-inner{position:relative}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line-strong);border-radius:999px;
+  padding:7px 16px;font-size:.8rem;color:var(--grey);font-weight:500;
+  background:rgba(14,25,41,.6);margin-bottom:28px;
+}
+.hero-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.hero h1{
+  font-size:clamp(2.6rem,6.4vw,4.6rem);font-weight:800;
+  max-width:17ch;margin:0 auto;
+  background:linear-gradient(180deg,#FFFFFF 30%,#B9C6D8 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero p{
+  color:var(--grey);font-size:1.12rem;max-width:56ch;margin:24px auto 36px;
+}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:84px}
+
+/* ---- hero dashboard screenshot ---- */
+.shot-frame{
+  position:relative;margin:0 auto;max-width:980px;
+  border-radius:16px;
+  box-shadow:0 40px 120px rgba(0,0,0,.55), 0 0 80px rgba(163,230,53,.06);
+}
+.shot{
+  background:var(--card-2);border:1px solid var(--line-strong);border-radius:16px;overflow:hidden;
+  text-align:left;
+}
+.shot-top{
+  display:flex;align-items:center;gap:8px;padding:12px 16px;
+  border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);
+}
+.shot-top span{width:10px;height:10px;border-radius:50%;background:rgba(163,197,255,.15)}
+.shot-url{
+  margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--dim);
+  border:1px solid var(--line);border-radius:6px;padding:3px 12px;
+}
+.shot-body{display:grid;grid-template-columns:200px 1fr;min-height:380px}
+.shot-side{border-right:1px solid var(--line);padding:16px 12px;background:rgba(255,255,255,.015)}
+.side-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:9px;font-size:.8rem;color:var(--grey);margin-bottom:3px;
+}
+.side-item.active{background:var(--lime-soft);color:var(--lime);font-weight:600}
+.side-label{font-size:.65rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;padding:14px 12px 6px;font-weight:600}
+.shot-main{padding:22px}
+.shot-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.shot-h b{font-size:1.02rem;letter-spacing:-.02em}
+.cluster-pills{display:flex;gap:6px}
+.cpill{font-family:'IBM Plex Mono',monospace;font-size:.66rem;border:1px solid var(--line-strong);border-radius:6px;padding:4px 10px;color:var(--grey)}
+.cpill.on{background:var(--lime-soft);border-color:rgba(163,230,53,.3);color:var(--lime)}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.stat{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+}
+.stat .k{font-size:.72rem;color:var(--dim);font-weight:500}
+.stat .v{font-size:1.5rem;font-weight:700;letter-spacing:-.03em;margin-top:2px}
+.stat .v.red{color:var(--red)}
+.stat .v.amber{color:var(--amber)}
+.stat .v.lime{color:var(--lime)}
+.trow{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:11px 16px;margin-bottom:8px;font-size:.82rem;
+}
+.trow .l{display:flex;align-items:center;gap:12px}
+.trow .form{font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:var(--white);font-weight:500;min-width:64px}
+.trow .client{color:var(--grey)}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:.62rem;padding:4px 9px;border-radius:5px;font-weight:500}
+.tag-red{background:rgba(248,113,113,.13);color:var(--red)}
+.tag-amber{background:rgba(251,191,36,.12);color:var(--amber)}
+.tag-lime{background:var(--lime-soft);color:var(--lime)}
+@media(max-width:760px){
+  .shot-body{grid-template-columns:1fr}
+  .shot-side{display:none}
+  .stat-row{grid-template-columns:1fr 1fr}
+}
+
+/* ---------------- statement ---------------- */
+.statement{padding:130px 0 90px;text-align:center}
+.statement .kicker{color:var(--lime);font-weight:600;font-size:.95rem;margin-bottom:22px}
+.statement p{
+  font-size:clamp(1.3rem,3vw,1.9rem);font-weight:600;letter-spacing:-.02em;
+  line-height:1.45;max-width:34ch;margin:0 auto;color:var(--white);
+}
+.statement p span{color:var(--dim)}
+
+/* ---------------- bento ---------------- */
+.section-head{text-align:center;max-width:620px;margin:0 auto 60px}
+.section-head h2{font-size:clamp(1.9rem,4.4vw,3rem);font-weight:800}
+.section-head p{color:var(--grey);margin-top:16px;font-size:1.05rem}
+.bento{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:16px;
+}
+.card{
+  background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%);
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:30px;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+  transition:border-color .2s ease,transform .2s ease;
+}
+.card:hover{border-color:var(--line-strong);transform:translateY(-2px)}
+.card h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+.card>p{color:var(--grey);font-size:.92rem}
+.card .visual{margin-top:auto;padding-top:26px}
+.span-3{grid-column:span 3}
+.span-2{grid-column:span 2}
+.span-4{grid-column:span 4}
+.span-6{grid-column:span 6}
+@media(max-width:860px){.span-3,.span-2,.span-4{grid-column:span 6}}
+
+/* notification stack (cobalt-style) */
+.notif{
+  background:var(--bg-soft);border:1px solid var(--line-strong);border-radius:14px;
+  padding:14px 16px;margin-bottom:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+}
+.notif .meta{display:flex;align-items:center;gap:8px;font-size:.68rem;color:var(--dim);margin-bottom:6px}
+.notif .meta .bm{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#C7F464,#7CC414)}
+.notif .msg{font-size:.85rem;font-weight:600}
+.notif .sub{font-size:.76rem;color:var(--grey);margin-top:2px}
+.notif .actions{display:flex;gap:8px;margin-top:11px}
+.na{
+  font-size:.74rem;font-weight:600;border-radius:999px;padding:6px 14px;cursor:default;
+}
+.na-lime{background:var(--lime);color:#0A1628}
+.na-ghost{border:1px solid var(--line-strong);color:var(--grey)}
+.notif.n2{transform:scale(.97);opacity:.8}
+.notif.n3{transform:scale(.94);opacity:.55;margin-bottom:0}
+
+/* pipeline visual */
+.stages{display:flex;flex-direction:column;gap:8px}
+.stage{
+  display:flex;align-items:center;gap:12px;font-size:.8rem;color:var(--grey);
+}
+.stage .bar{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.05);overflow:hidden}
+.stage .bar i{display:block;height:100%;border-radius:4px;background:var(--lime)}
+.stage .nm{min-width:86px;font-family:'IBM Plex Mono',monospace;font-size:.68rem}
+.stage .pc{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--dim);min-width:32px;text-align:right}
+
+/* command bar visual */
+.cmdk{
+  background:var(--bg-soft);border:1px solid var(--line-strong);border-radius:14px;
+  padding:14px 16px;box-shadow:0 14px 40px rgba(0,0,0,.4);
+}
+.cmdk .inp{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:11px;margin-bottom:10px}
+.cmdk .inp .cursor{width:8px;height:16px;background:var(--lime);animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.cmdk .inp span{color:var(--grey);font-size:.85rem}
+.cmdk .opt{display:flex;justify-content:space-between;padding:8px 6px;font-size:.8rem;color:var(--grey);border-radius:7px}
+.cmdk .opt.hl{background:var(--lime-soft);color:var(--white)}
+.cmdk .k{font-family:'IBM Plex Mono',monospace;font-size:.64rem;border:1px solid var(--line-strong);border-radius:4px;padding:2px 7px;color:var(--dim)}
+
+/* ledger visual */
+.ledger .trow{margin-bottom:7px}
+
+/* ---------------- assistant ---------------- */
+.assistant{padding:150px 0 60px;position:relative}
+.assistant::before{
+  content:"";position:absolute;inset:0 -10%;
+  background:radial-gradient(ellipse 50% 45% at 50% 45%, rgba(96,165,250,.08), transparent 65%);
+  pointer-events:none;
+}
+.assist-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:0}
+@media(max-width:860px){.assist-grid{grid-template-columns:1fr}}
+.chat-bubble{
+  background:var(--bg-soft);border:1px solid var(--line-strong);border-radius:16px;
+  padding:16px 18px;font-size:.88rem;box-shadow:0 12px 36px rgba(0,0,0,.35);
+}
+.chat-bubble.user{background:var(--lime-soft);border-color:rgba(163,230,53,.25);margin-left:14%;margin-bottom:12px}
+.chat-bubble.ai{margin-right:14%;color:var(--grey)}
+.chat-bubble.ai b{color:var(--white)}
+.chat-input{
+  display:flex;align-items:center;justify-content:space-between;
+  border:1px solid var(--line-strong);border-radius:999px;
+  padding:11px 18px;margin-top:14px;font-size:.85rem;color:var(--dim);
+  background:var(--bg-soft);
+}
+.chat-input .send{color:var(--lime);font-weight:600;font-size:.8rem}
+.soon-badge{
+  display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.1em;
+  color:var(--blue);background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);
+  border-radius:5px;padding:4px 10px;margin-bottom:16px;text-transform:uppercase;
+}
+
+/* ---------------- final cta ---------------- */
+.final{padding:150px 0 130px;text-align:center;position:relative}
+.final::before{
+  content:"";position:absolute;inset:auto -10% 0;height:420px;
+  background:radial-gradient(ellipse 55% 65% at 50% 100%, rgba(163,230,53,.1), transparent 65%);
+  pointer-events:none;
+}
+.final h2{font-size:clamp(2rem,5vw,3.4rem);font-weight:800;max-width:22ch;margin:0 auto 18px;position:relative}
+.final p{color:var(--grey);max-width:44ch;margin:0 auto 36px;font-size:1.05rem;position:relative}
+
+/* phone mockup (manage on the go) */
+.phone{
+  width:180px;margin:0 auto;border:1px solid var(--line-strong);border-radius:26px;
+  background:var(--bg-soft);padding:12px 10px;box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+.phone .notch{width:64px;height:5px;border-radius:3px;background:rgba(163,197,255,.15);margin:0 auto 12px}
+.phone .p-head{font-size:.62rem;color:var(--dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;padding:0 4px}
+.phone .p-row{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--card);border:1px solid var(--line);border-radius:9px;
+  padding:8px 10px;margin-bottom:6px;font-size:.66rem;
+}
+.phone .p-row span:first-child{color:var(--white);font-weight:500}
+
+/* integration chips (data portability) */
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.ichip{
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line-strong);border-radius:10px;
+  padding:9px 14px;font-size:.76rem;color:var(--grey);font-weight:500;
+  background:var(--bg-soft);
+}
+.ichip .ic{
+  width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+  font-size:.6rem;font-weight:700;font-family:'IBM Plex Mono',monospace;
+}
+.ic-green{background:rgba(52,211,153,.15);color:#34D399}
+.ic-blue{background:rgba(96,165,250,.15);color:var(--blue)}
+.ic-lime{background:var(--lime-soft);color:var(--lime)}
+.ic-amber{background:rgba(251,191,36,.14);color:var(--amber)}
+
+/* ---------------- footer ---------------- */
+footer{border-top:1px solid var(--line);padding:48px 0 40px;color:var(--dim);font-size:.84rem}
+.foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.foot-links{display:flex;gap:22px;font-size:.82rem}
+.foot-links a{color:var(--grey)}
+.foot-links a:hover{color:var(--white)}
+.foot-legal{
+  margin-top:26px;padding-top:22px;border-top:1px solid var(--line);
+  font-size:.74rem;color:var(--dim);line-height:1.7;max-width:70ch;
+}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <span class="brand-mark">M</span> MSMA Workspace
+    </a>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#assistant">Assistant</a>
+      <a href="#modules">Modules</a>
+    </nav>
+    <a class="btn btn-white btn-sm" href="https://app.msma.work">Sign in</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero">
+    <canvas id="stars" aria-hidden="true"></canvas>
+    <canvas id="stars-front" aria-hidden="true"></canvas>
+    <div class="wrap hero-inner" style="z-index:1">
+      <h1>Unleash the power of intuitive compliance</h1>
+      <p>Say goodbye to scattered trackers and spreadsheets. Every deadline, engagement, task, and ledger the firm runs on — in one workspace. Simple. Unified. And never chaotic.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-lime" href="https://app.msma.work">Open Workspace</a>
+        <a class="btn btn-ghost" href="#features">Learn more ↓</a>
+      </div>
+
+      <div class="shot-frame reveal">
+        <div class="shot">
+          <div class="shot-top">
+            <span></span><span></span><span></span>
+            <div class="shot-url">app.msma.work/#dashboard</div>
+          </div>
+          <div class="shot-body">
+            <div class="shot-side">
+              <div class="side-label">Workspace</div>
+              <div class="side-item active">◉ Dashboard</div>
+              <div class="side-item">☑ Tasks</div>
+              <div class="side-item">◫ Tax Compliance</div>
+              <div class="side-item">◈ Audit Monitoring</div>
+              <div class="side-item">▤ Books</div>
+              <div class="side-label">Firm</div>
+              <div class="side-item">▣ Client Masterlist</div>
+              <div class="side-item">⚙ Settings</div>
+            </div>
+            <div class="shot-main">
+              <div class="shot-h">
+                <b>Good morning, RPM Cluster</b>
+                <div class="cluster-pills">
+                  <span class="cpill on">RPM</span><span class="cpill">VCM</span><span class="cpill">ADS</span>
+                </div>
+              </div>
+              <div class="stat-row">
+                <div class="stat"><div class="k">Filings due this week</div><div class="v red">7</div></div>
+                <div class="stat"><div class="k">Open tasks</div><div class="v amber">23</div></div>
+                <div class="stat"><div class="k">Engagements on track</div><div class="v lime">12</div></div>
+              </div>
+              <div class="trow"><div class="l"><span class="form">1601-C</span><span class="client">14 clients pending</span></div><span class="tag tag-red">DUE AUG 10</span></div>
+              <div class="trow"><div class="l"><span class="form">2550Q</span><span class="client">9 clients pending</span></div><span class="tag tag-amber">DUE AUG 25</span></div>
+              <div class="trow"><div class="l"><span class="form">1702Q</span><span class="client">On track</span></div><span class="tag tag-lime">DUE AUG 29</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STATEMENT ================= -->
+  <section class="statement">
+    <div class="wrap reveal">
+      <div class="kicker">Who said compliance has to be chaos?</div>
+      <p>With MSMA Workspace, running the firm is clear, accountable, and anything but scattered. One place brings clarity to every BIR deadline, every audit stage, and every staff assignment. <span>Say no to five browser tabs and trackers that don't talk to each other.</span></p>
+    </div>
+  </section>
+
+  <!-- ================= BENTO ================= -->
+  <section id="features" style="padding:60px 0 30px">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <h2>Everything the firm needs.<br>Nothing it doesn't</h2>
+        <p>Compliance, audit, tasks, and books in one place. A flexible workspace that makes every filing cycle feel like a breeze.</p>
+      </div>
+
+      <div class="bento">
+
+        <!-- insights -->
+        <div class="card span-3 reveal" id="modules">
+          <h3>Deadlines at your fingertips</h3>
+          <p>Every BIR form across every cluster, urgency-sorted, so the next filing is always the first thing you see.</p>
+          <div class="visual">
+            <div class="trow"><div class="l"><span class="form">0619-E</span><span class="client">RPM · 6 pending</span></div><span class="tag tag-red">3 DAYS</span></div>
+            <div class="trow"><div class="l"><span class="form">SLSP</span><span class="client">VCM · 4 pending</span></div><span class="tag tag-amber">9 DAYS</span></div>
+            <div class="trow" style="margin-bottom:0"><div class="l"><span class="form">1604-C</span><span class="client">DAT generated ✓</span></div><span class="tag tag-lime">FILED</span></div>
+          </div>
+        </div>
+
+        <!-- alerts / notification stack -->
+        <div class="card span-3 reveal">
+          <h3>Important firm alerts</h3>
+          <p>The workspace watches the calendar so nobody has to. Deadlines, archiving countdowns, and overdue tasks surface on their own.</p>
+          <div class="visual">
+            <div class="notif">
+              <div class="meta"><span class="bm"></span> MSMA Workspace · Just now</div>
+              <div class="msg">🚨 1601-C filing window closing</div>
+              <div class="sub">14 clients pending · due Aug 10</div>
+              <div class="actions"><span class="na na-lime">Open queue</span><span class="na na-ghost">Snooze</span></div>
+            </div>
+            <div class="notif n2">
+              <div class="meta"><span class="bm"></span> MSMA Workspace · 2h ago</div>
+              <div class="msg">📁 PSQC archive countdown</div>
+              <div class="sub">FS Audit — 23 days left to archive</div>
+            </div>
+            <div class="notif n3">
+              <div class="meta"><span class="bm"></span> MSMA Workspace · 5h ago</div>
+              <div class="msg">✅ Task completed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- audit pipeline -->
+        <div class="card span-2 reveal">
+          <h3>Seven stages, zero surprises</h3>
+          <p>Every engagement tracked from PRA to AFI.</p>
+          <div class="visual stages">
+            <div class="stage"><span class="nm">PRA</span><div class="bar"><i style="width:100%"></i></div><span class="pc">100%</span></div>
+            <div class="stage"><span class="nm">WORKING P.</span><div class="bar"><i style="width:100%"></i></div><span class="pc">100%</span></div>
+            <div class="stage"><span class="nm">FIELDWORK</span><div class="bar"><i style="width:80%"></i></div><span class="pc">80%</span></div>
+            <div class="stage"><span class="nm">REVIEW</span><div class="bar"><i style="width:35%"></i></div><span class="pc">35%</span></div>
+            <div class="stage"><span class="nm">REPORTING</span><div class="bar"><i style="width:0%"></i></div><span class="pc">—</span></div>
+          </div>
+        </div>
+
+        <!-- command / control -->
+        <div class="card span-2 reveal">
+          <h3>You're in control</h3>
+          <p>Lightning fast. One login, cluster switching, dark mode. Ctrl+K for everything.</p>
+          <div class="visual">
+            <div class="cmdk">
+              <div class="inp"><span class="cursor"></span><span>Jump to…</span></div>
+              <div class="opt hl"><span>1601-C queue — RPM</span><span class="k">↵</span></div>
+              <div class="opt"><span>Client Masterlist</span><span class="k">⌘M</span></div>
+              <div class="opt"><span>Switch cluster</span><span class="k">⌘J</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- books -->
+        <div class="card span-2 reveal">
+          <h3>Books that balance</h3>
+          <p>Double-entry bookkeeping with a Philippine SME chart of accounts — VAT, CWT, and statutory built in.</p>
+          <div class="visual ledger">
+            <div class="trow"><div class="l"><span class="form">DR</span><span class="client">Input VAT</span></div><span class="tag" style="color:var(--grey)">1,285.71</span></div>
+            <div class="trow"><div class="l"><span class="form">CR</span><span class="client">Cash — BPI</span></div><span class="tag" style="color:var(--grey)">12,000.00</span></div>
+            <div class="trow" style="margin-bottom:0"><div class="l"><span class="form">TB</span><span class="client">Trial balance</span></div><span class="tag tag-lime">BALANCED</span></div>
+          </div>
+        </div>
+
+        <!-- manage on the go -->
+        <div class="card span-3 reveal">
+          <h3>Manage on the go</h3>
+          <p>Full workspace in any browser, on any device — no installs, no build steps. Check the queue from fieldwork, the BIR line, or the couch. Because, you know, it's 2026.</p>
+          <div class="visual">
+            <div class="phone">
+              <div class="notch"></div>
+              <div class="p-head">Today · RPM</div>
+              <div class="p-row"><span>1601-C queue</span><span class="tag tag-red">7</span></div>
+              <div class="p-row"><span>My tasks</span><span class="tag tag-amber">5</span></div>
+              <div class="p-row" style="margin-bottom:0"><span>Fieldwork</span><span class="tag tag-lime">✓</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- data portability -->
+        <div class="card span-3 reveal">
+          <h3>Your data flows in and out</h3>
+          <p>Import the firm-standard payroll template, generate BIR-valid DAT files, and back everything up in one click. Nothing gets trapped inside.</p>
+          <div class="visual chips">
+            <span class="ichip"><span class="ic ic-green">XL</span>Payroll template import</span>
+            <span class="ichip"><span class="ic ic-lime">DAT</span>1604-C DAT export</span>
+            <span class="ichip"><span class="ic ic-blue">{ }</span>JSON backup &amp; restore</span>
+            <span class="ichip"><span class="ic ic-amber">CSV</span>QuickBooks-ready export</span>
+            <span class="ichip"><span class="ic ic-green">XL</span>Alphalist grid import</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ASSISTANT ================= -->
+  <section class="assistant" id="assistant">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="soon-badge">Coming soon</span>
+        <h2>Meet the MSMA Assistant</h2>
+        <p>An AI assistant trained on the firm's SOPs and BIR workflows — designed to decode filing requirements and answer procedure questions in seconds.</p>
+      </div>
+      <div class="assist-grid">
+        <div class="card reveal">
+          <h3>Ask anything, cite the SOP</h3>
+          <p>New staff get answers grounded in how MSMA actually does things — not generic tax advice.</p>
+          <div class="visual">
+            <div class="chat-bubble user">What attachments does a 1601-C filing need for a client with weekly payroll?</div>
+            <div class="chat-bubble ai"><b>MSMA Assistant:</b> Use the firm-standard payroll template — weekly runs consolidate into the monthly remittance. You'll need the import-ready columns per SOP §4.2…</div>
+            <div class="chat-input"><span>Ask the Assistant…</span><span class="send">✨ Send</span></div>
+          </div>
+        </div>
+        <div class="card reveal">
+          <h3>Heads-up before it hurts</h3>
+          <p>Deadline risk surfaced early, based on live pending counts across the workspace.</p>
+          <div class="visual">
+            <div class="notif">
+              <div class="meta"><span class="bm"></span> Assistant · Forecast</div>
+              <div class="msg">⚠️ Filing risk detected</div>
+              <div class="sub">At the current pace, 5 of 14 pending 1601-C clients may miss the Aug 10 deadline. Consider reassigning 2 preparers from VCM.</div>
+              <div class="actions"><span class="na na-lime">View queue</span><span class="na na-ghost">Dismiss</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FINAL CTA ================= -->
+  <section class="final">
+    <div class="wrap reveal">
+      <h2>See where one workspace can take the firm.</h2>
+      <p>The first internal tool you'll love. And the last browser tab you'll ever need.</p>
+      <a class="btn btn-lime" href="https://app.msma.work">Open Workspace</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="#top" style="font-size:.9rem">
+        <span class="brand-mark" style="width:24px;height:24px;font-size:.7rem">M</span> MSMA Workspace
+      </a>
+      <nav class="foot-links">
+        <a href="#features">Features</a>
+        <a href="#assistant">Assistant</a>
+        <a href="https://app.msma.work">Sign in</a>
+      </nav>
+    </div>
+    <div class="foot-legal">
+      © 2026 Mora Sanchez Meñoza &amp; Associates. MSMA Workspace is an internal platform for authorized firm personnel only. Access is restricted to MSMA staff with valid credentials. BIR form references (1601-C, 2550Q, 1604-C, and others) pertain to filings administered by the Bureau of Internal Revenue of the Philippines; this platform is a monitoring tool and does not itself constitute tax advice or an official filing channel.
+      <div class="mono" style="margin-top:14px;font-size:.68rem">msma.work · tax.msma.work · app.msma.work</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ---------- drifting star particles, two depth layers (hero) ----------
+function starLayer(canvasId, opts){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr, particles = [];
+
+  function size(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Field ends just past the top edge of the dashboard screenshot (Cobalt behavior):
+    // dots emerge from behind the screenshot and rise through the headline zone.
+    const shot = document.querySelector('.shot-frame');
+    if(shot){
+      canvas.style.height = (shot.offsetTop + 100) + 'px';
+    }
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function spawn(initial){
+    return {
+      x: Math.random() * W,
+      y: initial ? Math.random() * H : H + 6,
+      r: Math.random() * opts.rVar + opts.rMin,
+      vy: -(Math.random() * opts.vVar + opts.vMin),
+      vx: (Math.random() - 0.5) * 0.1,
+      base: Math.random() * opts.aVar + opts.aMin,
+      tw: Math.random() * Math.PI * 2,
+      tws: Math.random() * 0.015 + 0.004,
+      lime: Math.random() < 0.18
+    };
+  }
+
+  function init(){
+    size();
+    const count = Math.min(Math.floor(W * H / opts.density), opts.max);
+    particles = Array.from({length: count}, () => spawn(true));
+  }
+
+  // fade zones: dots materialize near the bottom (behind the screenshot's top edge)
+  // and dissolve as they rise into the top glow
+  const FADE_START = 0.38, FADE_END = 0.06, BIRTH_ZONE = 0.88;
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+    for(let i = 0; i < particles.length; i++){
+      const p = particles[i];
+      const yr = p.y / H;
+      let fade = 1;
+      if(yr < FADE_START){
+        fade = Math.max((yr - FADE_END) / (FADE_START - FADE_END), 0);
+      } else if(yr > BIRTH_ZONE){
+        fade = Math.max((1.04 - yr) / (1.04 - BIRTH_ZONE), 0); // soft fade-in at birth
+      }
+      const alpha = p.base * fade * (0.72 + 0.28 * Math.sin(p.tw));
+      if(alpha > 0.01){
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.lime
+          ? 'rgba(163,230,53,' + alpha.toFixed(3) + ')'
+          : 'rgba(205,222,246,' + alpha.toFixed(3) + ')';
+        ctx.fill();
+      }
+    }
+  }
+
+  function tick(){
+    for(let i = 0; i < particles.length; i++){
+      const p = particles[i];
+      p.y += p.vy; p.x += p.vx; p.tw += p.tws;
+      if(p.y < H * FADE_END || p.x < -8 || p.x > W + 8) particles[i] = spawn(false);
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  init();
+  window.addEventListener('resize', init);
+  if(reduceMotion){ draw(); } else { requestAnimationFrame(tick); }
+}
+
+// BACK layer: the main field, behind the text — small, plentiful
+starLayer('stars', {
+  rMin: 0.5, rVar: 1.2,       // size
+  vMin: 0.09, vVar: 0.28,     // speed
+  aMin: 0.3, aVar: 0.45,      // brightness
+  density: 9000, max: 140
+});
+
+// FRONT layer: sparse, slightly bigger and faster — floats over the headline
+starLayer('stars-front', {
+  rMin: 0.9, rVar: 1.3,
+  vMin: 0.17, vVar: 0.33,
+  aMin: 0.22, aVar: 0.35,     // kept dimmer so text stays readable
+  density: 42000, max: 26
+});
+
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
