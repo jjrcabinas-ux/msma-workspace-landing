@@ -403,6 +403,14 @@ footer{border-top:1px solid var(--line);padding:48px 0 40px;color:var(--dim);fon
   padding:11px 12px;color:var(--white);font-size:.92rem;font-family:inherit;
 }
 .auth-modal input:focus{outline:2px solid var(--lime);outline-offset:1px;border-color:transparent}
+.auth-modal input:-webkit-autofill,
+.auth-modal input:-webkit-autofill:hover,
+.auth-modal input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px var(--card-2) inset;
+  -webkit-text-fill-color:var(--white);
+  caret-color:var(--white);
+  transition:background-color 99999s ease-in-out 0s;
+}
 .auth-passwrap{position:relative}
 .auth-passwrap input{padding-right:44px}
 #auth-toggle{
@@ -410,6 +418,7 @@ footer{border-top:1px solid var(--line);padding:48px 0 40px;color:var(--dim);fon
   color:var(--grey);cursor:pointer;font-size:.95rem;
 }
 #auth-toggle:hover{color:var(--white)}
+#auth-toggle.on{color:var(--lime)}
 .auth-error{
   background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);
   font-size:.78rem;border-radius:8px;padding:9px 12px;margin-top:14px;
@@ -1104,6 +1113,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   document.getElementById('auth-toggle').addEventListener('click', function(){
     var show = passEl.type === 'password';
     passEl.type = show ? 'text' : 'password';
+    this.classList.toggle('on', show);
     this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
   });
 
