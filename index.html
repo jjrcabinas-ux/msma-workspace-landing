@@ -643,7 +643,11 @@ function starLayer(canvasId, opts){
     // dots emerge from behind the screenshot and rise through the headline zone.
     const shot = document.querySelector('.shot-frame');
     if(shot){
-      canvas.style.height = (shot.offsetTop + 100) + 'px';
+      // Sum offsetTop up to the hero: transformed wrappers (e.g. .shot-zoom)
+      // become offsetParent in Chrome, so a single offsetTop reads ~0.
+      let y = 0, n = shot;
+      while(n && n !== canvas.offsetParent){ y += n.offsetTop; n = n.offsetParent; }
+      canvas.style.height = (y + 100) + 'px';
     }
     W = canvas.clientWidth; H = canvas.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
