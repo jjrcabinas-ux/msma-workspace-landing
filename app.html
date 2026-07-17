@@ -162,6 +162,20 @@ a{color:inherit;text-decoration:none}
   background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.82rem;flex:1;
 }
 
+/* members */
+.mem-input{
+  background:var(--card-2);border:1px solid var(--line-strong);border-radius:8px;
+  padding:8px 10px;color:var(--white);font-family:inherit;font-size:.84rem;
+}
+.mem-input:focus{outline:2px solid var(--lime);outline-offset:1px}
+#mem-email{min-width:240px}
+.mem-del{color:var(--red);font-size:.8rem}
+.mem-del:hover{text-decoration:underline}
+.mem-error{
+  background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);
+  font-size:.78rem;border-radius:8px;padding:9px 12px;margin:0 0 16px;max-width:520px;
+}
+
 /* coming soon board */
 .soonboard{
   border:1px dashed var(--line-strong);border-radius:14px;padding:60px 30px;text-align:center;color:var(--grey);
@@ -215,6 +229,7 @@ a{color:inherit;text-decoration:none}
     <button class="sb-item" data-board="audit">Audit</button>
     <button class="sb-item" data-board="books">Bookkeeping</button>
     <button class="sb-item" data-board="clients">Client Masterlist</button>
+    <button class="sb-item" id="sb-members" data-board="members" hidden>Members</button>
     <div class="sb-foot">
       <button class="sb-item" data-board="settings">⚙ Settings</button>
     </div>
@@ -235,18 +250,17 @@ firebase.initializeApp({
   appId: '1:33439738161:web:a3f3ab244bd17f4cc9e810'
 });
 var ADMIN_EMAILS = ['jjrcabinas@gmail.com'];
-var ALLOWED_GOOGLE = [
-  'jjrcabinas@gmail.com'
-];
 var IS_ADMIN = false;
-function isAllowed(user){
-  if (!user) return false;
-  var viaGoogle = (user.providerData || []).some(function(p){ return p.providerId === 'google.com'; });
-  if (!viaGoogle) return true;
-  return ALLOWED_GOOGLE.indexOf((user.email || '').toLowerCase()) !== -1;
-}
 firebase.auth().onAuthStateChanged(function(user){
-  if (!user || !isAllowed(user)) { window.location.replace('/'); return; }
+  if (!user) { window.location.replace('/'); return; }
+  var em = (user.email || '').toLowerCase();
+  if (ADMIN_EMAILS.indexOf(em) !== -1) { enter(user); return; }
+  firebase.firestore().collection('members').doc(em).get().then(function(doc){
+    if (doc.exists) enter(user);
+    else { firebase.auth().signOut(); window.location.replace('/'); }
+  }).catch(function(){ window.location.replace('/'); });
+});
+function enter(user){
   var gate = document.getElementById('gate');
   if (gate) gate.remove();
   startSync();
@@ -263,7 +277,9 @@ firebase.auth().onAuthStateChanged(function(user){
     badge.style.cssText = 'margin-left:8px;font-family:IBM Plex Mono,monospace;font-size:.58rem;color:var(--lime);background:var(--lime-soft);border:1px solid rgba(163,230,53,.3);border-radius:5px;padding:2px 6px;vertical-align:2px';
     document.querySelector('.tb-brand').appendChild(badge);
   }
-});
+  var mem = document.getElementById('sb-members');
+  if (mem) mem.hidden = !IS_ADMIN;
+}
 document.getElementById('signout').addEventListener('click', function(){
   firebase.auth().signOut().then(function(){ window.location.replace('/'); });
 });
@@ -297,7 +313,8 @@ var BOARDS = {
   audit: { title: 'Audit', desc: '', soon: 'This module is being built next — engagement stages across clients will live here.' },
   books: { title: 'Bookkeeping', desc: '', soon: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
   clients: { title: 'Client Masterlist', desc: '', soon: 'This module is being built next — engagement coverage per client will live here.' },
-  settings: { title: 'Settings', desc: '', soon: 'Workspace settings — user roles, clusters, and module preferences — arrive with the full build.' }
+  settings: { title: 'Settings', desc: '', soon: 'Workspace settings — user roles, clusters, and module preferences — arrive with the full build.' },
+  members: { title: 'Members', membersView: true }
 };
 
 var current = 'dashboard';
@@ -360,6 +377,7 @@ function render(boardKey){
   document.querySelectorAll('.sb-item[data-board]').forEach(function(el){
     el.classList.toggle('active', el.getAttribute('data-board') === boardKey);
   });
+  if (b.membersView) { renderMembers(); return; }
   if (b.soon) {
     main.innerHTML = '<div class="board-head"><h1>' + esc(b.title) + '</h1></div>' +
       '<div class="board-tabs"></div><div style="height:20px"></div>' +
@@ -429,6 +447,77 @@ function wireBoard(){
     var firstAdd = main.querySelector('.addrow input');
     if (firstAdd) firstAdd.focus();
   });
+}
+
+/* ---------- Members (admin only) ---------- */
+var CLUSTERS = ['RPM', 'VCM', 'ADS', 'INTERN'];
+var membersUnsub = null;
+
+function renderMembers(){
+  main.innerHTML = '<div class="board-head"><h1>Members</h1>' +
+    '<div class="desc">Who can create a workspace account, and which cluster they belong to. Only the admin sees this page.</div></div>' +
+    '<div style="height:16px"></div>' +
+    '<div class="toolbar">' +
+    '<input id="mem-email" class="mem-input" type="email" inputmode="email" spellcheck="false" placeholder="staff.email@gmail.com" aria-label="Member email">' +
+    '<select id="mem-cluster" class="mem-input" aria-label="Cluster">' + CLUSTERS.map(function(c){ return '<option>' + c + '</option>'; }).join('') + '</select>' +
+    '<button class="tool-new" id="mem-add">+ Add member</button></div>' +
+    '<div class="mem-error" id="mem-error" role="alert" hidden></div>' +
+    '<div class="gtable" style="--gcolor:var(--lime)">' +
+    '<div class="grow head"><div>Email</div><div>Cluster</div><div>Added</div><div></div></div>' +
+    '<div id="mem-rows"></div></div>';
+
+  document.getElementById('mem-add').addEventListener('click', addMember);
+  document.getElementById('mem-email').addEventListener('keydown', function(e){ if (e.key === 'Enter') addMember(); });
+
+  if (membersUnsub) membersUnsub();
+  membersUnsub = db.collection('members').onSnapshot(function(snap){
+    if (current !== 'members') return;
+    var docs = [];
+    snap.forEach(function(d){ docs.push(d); });
+    docs.sort(function(a, b){ return a.id.localeCompare(b.id); });
+    var rows = docs.map(function(d){
+      var m = d.data() || {};
+      var added = m.addedAt && m.addedAt.toDate ? m.addedAt.toDate().toLocaleDateString() : '—';
+      return '<div class="grow item"><div><span class="name">' + esc(d.id) + '</span></div>' +
+        '<div><select class="mem-input mem-cluster-sel" data-email="' + esc(d.id) + '" aria-label="Cluster for ' + esc(d.id) + '">' +
+        CLUSTERS.map(function(c){ return '<option' + (m.cluster === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div><span class="due">' + added + '</span></div>' +
+        '<div><button class="mem-del" data-email="' + esc(d.id) + '">Remove</button></div></div>';
+    }).join('');
+    document.getElementById('mem-rows').innerHTML = rows ||
+      '<div class="grow item"><div><span class="name" style="color:var(--dim)">No members yet — add the first staff email above.</span></div><div></div><div></div><div></div></div>';
+    document.querySelectorAll('.mem-cluster-sel').forEach(function(sel){
+      sel.addEventListener('change', function(){
+        db.collection('members').doc(sel.getAttribute('data-email')).update({ cluster: sel.value }).catch(syncError);
+      });
+    });
+    document.querySelectorAll('.mem-del').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var em = btn.getAttribute('data-email');
+        if (confirm('Remove ' + em + '? They will lose workspace access.')) {
+          db.collection('members').doc(em).delete().catch(syncError);
+        }
+      });
+    });
+  }, syncError);
+}
+
+function addMember(){
+  var inp = document.getElementById('mem-email');
+  var err = document.getElementById('mem-error');
+  var email = inp.value.trim().toLowerCase();
+  err.hidden = true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = 'Enter a valid email address.';
+    err.hidden = false;
+    return;
+  }
+  db.collection('members').doc(email).set({
+    email: email,
+    cluster: document.getElementById('mem-cluster').value,
+    addedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){ inp.value = ''; inp.focus(); }).catch(syncError);
 }
 
 document.querySelectorAll('.sb-item[data-board]').forEach(function(el){

@@ -6,13 +6,16 @@ service cloud.firestore {
       return request.auth != null
         && request.auth.token.email.lower() == 'jjrcabinas@gmail.com';
     }
-    // Staff allowlist — keep in sync with ALLOWED_GOOGLE in index.html/app.html.
-    // Admin-created email/password accounts must also be listed here.
+    // Staff = admin, or anyone whose email the admin added in the Members module.
     function isStaff() {
       return isAdmin() || (request.auth != null
-        && request.auth.token.email.lower() in [
-          'jjrcabinas@gmail.com'
-        ]);
+        && exists(/databases/$(database)/documents/members/$(request.auth.token.email.lower())));
+    }
+    // Member registry, doc id = lowercase email. Admin manages it; a signed-in
+    // user may only check their own membership (the registration gate).
+    match /members/{email} {
+      allow get: if isAdmin() || (request.auth != null && request.auth.token.email.lower() == email);
+      allow list, create, update, delete: if isAdmin();
     }
     match /boards/{board} {
       allow read, write: if isStaff();

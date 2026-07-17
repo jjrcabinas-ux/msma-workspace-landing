@@ -1037,17 +1037,8 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     projectId: 'msma-workspace',
     appId: '1:33439738161:web:a3f3ab244bd17f4cc9e810'
   };
-  // Staff allowlist for Google sign-in. Email/password accounts are
-  // admin-created in the Firebase console, so they bypass this list.
-  var ALLOWED_GOOGLE = [
-    'jjrcabinas@gmail.com'
-  ];
-  function isAllowed(user){
-    if (!user) return false;
-    var viaGoogle = (user.providerData || []).some(function(p){ return p.providerId === 'google.com'; });
-    if (!viaGoogle) return true;
-    return ALLOWED_GOOGLE.indexOf((user.email || '').toLowerCase()) !== -1;
-  }
+  // Access = admin, or an email the admin added in the workspace Members module.
+  var ADMIN_EMAIL = 'jjrcabinas@gmail.com';
   function loadFirebase(){
     if (fb) return Promise.resolve(fb);
     if (fbLoading) return fbLoading;
@@ -1064,14 +1055,23 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
       window.firebase.initializeApp(FB_CONFIG);
       fb = window.firebase;
       fb.auth().onAuthStateChanged(function(user){
-        if (user && !isAllowed(user)) {
+        if (!user) { setView(null); return; }
+        var em = (user.email || '').toLowerCase();
+        var proceed = function(){
+          if (!hasPassword(user)) showSetup(user);
+          else setView(user);
+        };
+        if (em === ADMIN_EMAIL) { proceed(); return; }
+        fb.firestore().collection('members').doc(em).get().then(function(doc){
+          if (doc.exists) { proceed(); return; }
           fb.auth().signOut();
           setView(null);
-          showError('This Google account isn’t authorized for MSMA Workspace. Contact the administrator.');
-          return;
-        }
-        if (user && !hasPassword(user)) { showSetup(user); return; }
-        setView(user);
+          showError('This account isn’t authorized for MSMA Workspace. Ask the administrator to add you as a member.');
+        }).catch(function(){
+          fb.auth().signOut();
+          setView(null);
+          showError('Couldn’t verify your access right now. Please try again.');
+        });
       });
       return fb;
     }).catch(function(){
