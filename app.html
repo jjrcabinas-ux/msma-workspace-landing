@@ -303,12 +303,6 @@ function enter(user){
   document.getElementById('avatar').textContent = initials || '?';
   document.getElementById('who-name').textContent = name + (IS_ADMIN ? ' · Admin' : '');
   document.getElementById('who-email').textContent = email;
-  if (IS_ADMIN) {
-    var badge = document.createElement('span');
-    badge.textContent = 'ADMIN';
-    badge.style.cssText = 'margin-left:8px;font-family:IBM Plex Mono,monospace;font-size:.58rem;color:var(--lime);background:var(--lime-soft);border:1px solid rgba(163,230,53,.3);border-radius:5px;padding:2px 6px;vertical-align:2px';
-    document.querySelector('.tb-brand').appendChild(badge);
-  }
   var mem = document.getElementById('sb-members');
   if (mem) mem.hidden = !IS_ADMIN;
   checkUsername(user);
