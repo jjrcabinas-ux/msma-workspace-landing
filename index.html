@@ -741,15 +741,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
     </div>
     <div id="auth-view-picker" hidden>
       <h3>Welcome back</h3>
-      <p class="auth-sub" id="auth-user-email"></p>
-      <div class="auth-modules">
-        <a class="auth-mod" href="https://tasks.msma.work"><span class="ico">☑</span> Employee Task Monitoring</a>
-        <a class="auth-mod disabled" href="#" tabindex="-1" aria-disabled="true"><span class="ico">▣</span> Intern Task Monitoring <span class="soon">SOON</span></a>
-        <a class="auth-mod" href="https://tax.msma.work"><span class="ico">◫</span> Tax Compliance</a>
-        <a class="auth-mod disabled" href="#" tabindex="-1" aria-disabled="true"><span class="ico">◈</span> Audit <span class="soon">SOON</span></a>
-        <a class="auth-mod disabled" href="#" tabindex="-1" aria-disabled="true"><span class="ico">⋯</span> Others <span class="soon">SOON</span></a>
-      </div>
-      <button class="auth-signout" id="auth-signout">Sign out</button>
+      <p class="auth-sub">Opening your workspace…</p>
     </div>
   </div>
 </div>
@@ -1014,7 +1006,6 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   var passEl = document.getElementById('auth-pass');
   var errEl = document.getElementById('auth-error');
   var submitEl = document.getElementById('auth-submit');
-  var userEmailEl = document.getElementById('auth-user-email');
   var lastFocus = null, fb = null, fbLoading = null;
 
   var FB_CONFIG = {
@@ -1069,7 +1060,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   function setView(user){
     viewLogin.hidden = !!user;
     viewPicker.hidden = !user;
-    if (user) userEmailEl.textContent = user.email;
+    if (user) window.location.href = '/app';
   }
   function openModal(){
     lastFocus = document.activeElement;
@@ -1161,9 +1152,6 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     });
   });
 
-  document.getElementById('auth-signout').addEventListener('click', function(){
-    if (fb) fb.auth().signOut();
-  });
 })();
 </script>
 </body>
