@@ -52,7 +52,7 @@ export default function Sidebar({
           else onPick('tasks');
         }}
       >
-        Employee Task Monitoring
+        Task Monitoring
         {isAdmin && <span className={`sb-caret${etmOpen ? ' open' : ''}`}>▾</span>}
       </button>
       {isAdmin && (

@@ -251,7 +251,7 @@ export default function Dashboard({
           </div>
 
           <div className="sum-heading">
-            Team Members <span>— click a card to open Employee Task Monitoring</span>
+            Team Members <span>— click a card to open Task Monitoring</span>
           </div>
           <div className="emp-grid">
             {per.map((p) => {

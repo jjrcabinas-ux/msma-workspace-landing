@@ -114,7 +114,7 @@ export default function Etm({
   const head = (
     <div className="board-head">
       <h1>
-        Employee Task Monitoring
+        Task Monitoring
         {cluster ? ` — ${cluster}${cluster === 'INTERN' ? 's' : ' Cluster'}` : ''}
       </h1>
       <div className="desc">Weekly deliverables per member. Everyone sees the cluster; you edit only your own sheet.</div>
@@ -129,7 +129,7 @@ export default function Etm({
         <div className="soonboard">
           <b>{isAdmin ? 'Pick a cluster' : clusterKnown ? 'No cluster assigned yet' : 'Loading…'}</b>
           {isAdmin
-            ? 'Choose RPM, ADS, VCM, or Interns from the Employee Task Monitoring dropdown in the sidebar.'
+            ? 'Choose RPM, ADS, VCM, or Interns from the Task Monitoring dropdown in the sidebar.'
             : clusterKnown
               ? 'Ask the administrator to add your email to a cluster in the Members module.'
               : 'Checking your cluster assignment.'}
