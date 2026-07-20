@@ -302,6 +302,28 @@ a{color:inherit;text-decoration:none}
 .uname-skip{color:var(--dim);font-size:.8rem;padding:8px 12px}
 .uname-skip:hover{color:var(--white)}
 
+/* profile setup (photo approach ported from msma-task-monitor AvatarUpload) */
+.prof-card{max-width:440px}
+.prof-ava-row{display:flex;align-items:center;gap:14px;margin-top:4px}
+.prof-ava-wrap{position:relative;width:74px;height:74px;flex:none}
+.prof-ava{
+  width:74px;height:74px;border-radius:50%;background:var(--lime);color:#0A1628;
+  font-weight:700;font-size:1.6rem;display:grid;place-items:center;overflow:hidden;
+  background-size:cover;background-position:center;
+}
+.prof-ava-badge{
+  position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;
+  background:var(--lime);color:#0A1628;display:grid;place-items:center;border:2px solid var(--card);
+}
+.prof-ava-badge:hover{filter:brightness(1.08)}
+.prof-ava-note{color:var(--dim);font-size:.74rem}
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.prof-field.full{grid-column:1 / -1}
+.prof-field label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.prof-field .mem-input{width:100%}
+.mem-input[type="date"]{color-scheme:dark}
+.pava-photo{background-size:cover;background-position:center;color:transparent}
+
 /* coming soon board */
 .soonboard{
   border:1px dashed var(--line-strong);border-radius:14px;padding:60px 30px;text-align:center;color:var(--grey);
@@ -341,6 +363,33 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
+<div class="uname-overlay" id="prof-overlay" hidden>
+  <div class="uname-card prof-card" role="dialog" aria-modal="true" aria-labelledby="prof-title">
+    <h3 id="prof-title">Update your profile</h3>
+    <p>Tell the team who you are — this shows across the workspace.</p>
+    <div class="prof-ava-row">
+      <div class="prof-ava-wrap">
+        <div class="prof-ava" id="prof-ava">?</div>
+        <button class="prof-ava-badge" id="prof-ava-btn" title="Upload photo" aria-label="Upload photo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+        <input type="file" id="prof-file" accept="image/*" hidden>
+      </div>
+      <div class="prof-ava-note">Upload a photo — it’s cropped to a square and shown beside your name.</div>
+    </div>
+    <div class="prof-grid">
+      <div class="prof-field full"><label for="prof-name">Full name</label><input class="mem-input" id="prof-name" autocomplete="name" placeholder="Juan A. Dela Cruz"></div>
+      <div class="prof-field full"><label for="prof-email">Email</label><input class="mem-input" id="prof-email" type="email" inputmode="email" spellcheck="false"></div>
+      <div class="prof-field"><label for="prof-bday">Birthdate</label><input class="mem-input" id="prof-bday" type="date"></div>
+      <div class="prof-field"><label for="prof-mobile">Mobile number</label><input class="mem-input" id="prof-mobile" type="tel" inputmode="tel" placeholder="0917 123 4567"></div>
+      <div class="prof-field full"><label for="prof-pos">Position</label><select class="mem-input" id="prof-pos"><option value="">Select position…</option><option>Junior Associate</option><option>Senior Associate</option><option>Associate Director</option><option>Partner</option></select></div>
+    </div>
+    <div class="mem-error" id="prof-error" role="alert" hidden style="margin:12px 0 0"></div>
+    <div class="uname-actions">
+      <button class="tool-new" id="prof-save">Save profile</button>
+      <button class="uname-skip" id="prof-skip">Later</button>
+    </div>
+  </div>
+</div>
+
 <div id="gate">
   <img src="/logo.png" alt="MSMA logo">
   <div class="msg">Loading your workspace…</div>
@@ -356,6 +405,7 @@ a{color:inherit;text-decoration:none}
   </div>
   <div class="avatar-menu" id="avatar-menu" hidden>
     <div class="who"><b id="who-name">…</b><span id="who-email"></span></div>
+    <button id="menu-profile">My profile</button>
     <button id="signout">Sign out</button>
   </div>
 </header>
@@ -413,14 +463,20 @@ function enter(user){
   document.getElementById('who-email').textContent = email;
   var mem = document.getElementById('sb-members');
   if (mem) mem.hidden = !IS_ADMIN;
-  checkUsername(user);
+  checkUsername(user, function(d){
+    applyProfileToUi(d);
+    if (!d.profileComplete) openProfile(d);
+  });
 }
 
-/* One-time username prompt for accounts created before the username system */
-function checkUsername(user){
+/* One-time username prompt for accounts created before the username system.
+   Calls done(profileData) once the username step is settled so the profile
+   prompt can follow. */
+function checkUsername(user, done){
   var db2 = firebase.firestore();
   db2.collection('users').doc(user.uid).get().then(function(doc){
-    if (doc.exists && doc.data().username) return;
+    var d = (doc.exists && doc.data()) || {};
+    if (d.username) { done(d); return; }
     var ov = document.getElementById('uname-overlay');
     ov.hidden = false;
     var inp = document.getElementById('uname-input');
@@ -432,18 +488,115 @@ function checkUsername(user){
       var uname = inp.value.trim().toLowerCase();
       if (!/^[a-z0-9._-]{3,20}$/.test(uname)) { fail('3–20 characters: letters, numbers, dots, dashes, or underscores.'); return; }
       var ref = db2.collection('usernames').doc(uname);
-      ref.get().then(function(d){
-        if (d.exists && d.data().uid !== user.uid) { fail('That username is already taken — try another.'); return null; }
+      ref.get().then(function(dd){
+        if (dd.exists && dd.data().uid !== user.uid) { fail('That username is already taken — try another.'); return null; }
         return ref.set({ uid: user.uid, email: user.email }).then(function(){
           return db2.collection('users').doc(user.uid).set({ username: uname, email: user.email }, { merge: true });
-        }).then(function(){ ov.hidden = true; });
+        }).then(function(){ ov.hidden = true; done(d); });
       }).catch(function(){ fail('Couldn’t save right now — try again.'); });
     }
     document.getElementById('uname-save').addEventListener('click', save);
     inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') save(); });
-    document.getElementById('uname-skip').addEventListener('click', function(){ ov.hidden = true; });
+    document.getElementById('uname-skip').addEventListener('click', function(){ ov.hidden = true; done(d); });
   }).catch(function(err){ console.warn('username check skipped:', err && err.code); });
 }
+
+/* ---------- Profile setup (photo flow ported from msma-task-monitor) ---------- */
+var PROF_PHOTO = null; // pending photo data URL for the open profile form
+
+function resizePhotoToDataUrl(file, cb){
+  var img = new Image();
+  var url = URL.createObjectURL(file);
+  img.onload = function(){
+    var S = 200; // px — canvas output size, cover-cropped
+    var canvas = document.createElement('canvas');
+    canvas.width = S; canvas.height = S;
+    var ctx = canvas.getContext('2d');
+    var scale = Math.max(S / img.width, S / img.height);
+    var w = img.width * scale, h = img.height * scale;
+    ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+    URL.revokeObjectURL(url);
+    cb(canvas.toDataURL('image/jpeg', 0.82));
+  };
+  img.src = url;
+}
+function updateProfAva(){
+  var el = document.getElementById('prof-ava');
+  if (PROF_PHOTO) { el.style.backgroundImage = 'url(' + PROF_PHOTO + ')'; el.textContent = ''; }
+  else { el.style.backgroundImage = ''; el.textContent = initialsOf(MY_LABEL || '') || '?'; }
+}
+function openProfile(d){
+  var user = firebase.auth().currentUser;
+  if (!user) return;
+  d = d || {};
+  document.getElementById('prof-name').value = d.fullName || '';
+  document.getElementById('prof-email').value = d.email || user.email || '';
+  document.getElementById('prof-bday').value = d.birthdate || '';
+  document.getElementById('prof-mobile').value = d.mobile || '';
+  document.getElementById('prof-pos').value = d.position || '';
+  PROF_PHOTO = d.photo || null;
+  updateProfAva();
+  document.getElementById('prof-error').hidden = true;
+  document.getElementById('prof-overlay').hidden = false;
+}
+function applyProfileToUi(d){
+  if (d.photo) {
+    var av = document.getElementById('avatar');
+    av.textContent = '';
+    av.style.backgroundImage = 'url(' + d.photo + ')';
+    av.style.backgroundSize = 'cover';
+    av.style.backgroundPosition = 'center';
+  }
+  if (d.fullName) {
+    MY_LABEL = d.fullName;
+    document.getElementById('who-name').textContent = d.fullName + (IS_ADMIN ? ' · Admin' : '');
+  }
+}
+function saveProfile(){
+  var user = firebase.auth().currentUser;
+  if (!user) return;
+  var err = document.getElementById('prof-error');
+  err.hidden = true;
+  function fail(msg){ err.textContent = msg; err.hidden = false; }
+  var fullName = document.getElementById('prof-name').value.trim();
+  var email = document.getElementById('prof-email').value.trim().toLowerCase();
+  var birthdate = document.getElementById('prof-bday').value;
+  var mobile = document.getElementById('prof-mobile').value.trim();
+  var position = document.getElementById('prof-pos').value;
+  if (!fullName) { fail('Please enter your full name.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fail('Enter a valid email address.'); return; }
+  if (!position) { fail('Please select your position.'); return; }
+  if (mobile && !/^[0-9+()\-\s]{7,16}$/.test(mobile)) { fail('That mobile number doesn’t look right.'); return; }
+  var data = {
+    fullName: fullName, email: email, birthdate: birthdate,
+    mobile: mobile, position: position, profileComplete: true
+  };
+  if (PROF_PHOTO) data.photo = PROF_PHOTO;
+  db.collection('users').doc(user.uid).set(data, { merge: true }).then(function(){
+    document.getElementById('prof-overlay').hidden = true;
+    applyProfileToUi(data);
+  }).catch(function(){ fail('Couldn’t save right now — try again.'); });
+}
+document.getElementById('prof-ava-btn').addEventListener('click', function(){
+  document.getElementById('prof-file').click();
+});
+document.getElementById('prof-file').addEventListener('change', function(e){
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  resizePhotoToDataUrl(file, function(dataUrl){ PROF_PHOTO = dataUrl; updateProfAva(); });
+  e.target.value = '';
+});
+document.getElementById('prof-save').addEventListener('click', saveProfile);
+document.getElementById('prof-skip').addEventListener('click', function(){
+  document.getElementById('prof-overlay').hidden = true;
+});
+document.getElementById('menu-profile').addEventListener('click', function(){
+  var user = firebase.auth().currentUser;
+  if (!user) return;
+  db.collection('users').doc(user.uid).get().then(function(doc){
+    openProfile((doc.exists && doc.data()) || {});
+  }).catch(function(){ openProfile({}); });
+});
 document.getElementById('signout').addEventListener('click', function(){
   firebase.auth().signOut().then(function(){ window.location.replace('/'); });
 });
@@ -489,7 +642,15 @@ var DEFAULT_GROUPS = [
 ];
 
 function ownerLabel(uid, fallback){
-  return USERS_MAP[uid] || fallback || uid.slice(0, 6);
+  return (USERS_MAP[uid] && USERS_MAP[uid].label) || fallback || uid.slice(0, 6);
+}
+function ownerPhoto(uid){
+  return (USERS_MAP[uid] && USERS_MAP[uid].photo) || null;
+}
+function pavaHtml(uid, label, color){
+  var ph = ownerPhoto(uid);
+  if (ph) return '<span class="pava pava-photo" style="background-image:url(' + ph + ')"></span>';
+  return '<span class="pava" style="background:' + color + '">' + esc(initialsOf(label)) + '</span>';
 }
 
 function initialsOf(label){
@@ -519,7 +680,10 @@ function startSync(){
   db.collection('users').onSnapshot(function(snap){
     snap.forEach(function(d){
       var u = d.data() || {};
-      USERS_MAP[d.id] = u.username || u.email || d.id.slice(0, 6);
+      USERS_MAP[d.id] = {
+        label: u.username || u.fullName || u.email || d.id.slice(0, 6),
+        photo: u.photo || null
+      };
     });
     VIEW.forEach(function(v){ v.label = ownerLabel(v.uid, v.label); });
     if (current === 'dashboard' || current === 'tasks') render(current);
@@ -604,7 +768,7 @@ function render(boardKey){
     if (VIEW_MODE === 'me' && v.uid !== ME_UID) return;
     if (VIEW_MODE === 'team' && v.uid !== ME_UID) {
       var lbl = v.label || ownerLabel(v.uid);
-      html += '<div class="owner-head"><span class="pava" style="background:var(--lime)">' + esc(initialsOf(lbl)) + '</span> ' + esc(lbl) + '</div>';
+      html += '<div class="owner-head">' + pavaHtml(v.uid, lbl, 'var(--lime)') + ' ' + esc(lbl) + '</div>';
     }
     v.groups.forEach(function(g, gi){
       html += '<div class="group" data-oi="' + oi + '" data-gi="' + gi + '">' +
@@ -984,7 +1148,7 @@ function flatItems(){
 }
 function badge(s){ return '<span class="badge ' + s + '">' + STATUS_LABEL[s] + '</span>'; }
 function sumRow(f){
-  return '<div class="snap-row"><span class="pava" style="background:' + empColor(f.idx) + '">' + esc(initialsOf(f.owner)) + '</span>' +
+  return '<div class="snap-row">' + pavaHtml(VIEW[f.idx] && VIEW[f.idx].uid, f.owner, empColor(f.idx)) +
     '<div class="snap-body">' + (f.it.chip ? '<span class="form-chip">' + esc(f.it.chip) + '</span> ' : '') + esc(f.it.name) +
     ' <span class="snap-owner">— ' + esc(f.owner) + (f.it.due && f.it.due !== '—' ? ' · ' + esc(f.it.due) : '') + '</span></div>' +
     badge(f.it.s) + '</div>';
@@ -1117,7 +1281,7 @@ function renderSummary(){
       var k = el.getAttribute('data-kpi');
       if (k === 'members') {
         openListModal('Team Members (' + per.length + ')', per.map(function(p){
-          return '<div class="snap-row"><span class="pava" style="background:' + empColor(p.i) + '">' + esc(initialsOf(p.label)) + '</span>' +
+          return '<div class="snap-row">' + pavaHtml(VIEW[p.i] && VIEW[p.i].uid, p.label, empColor(p.i)) +
             '<div class="snap-body">' + esc(p.label) + ' <span class="snap-owner">— ' + p.n + ' items · ' + p.d + ' done</span></div></div>';
         }).join(''));
       } else {
