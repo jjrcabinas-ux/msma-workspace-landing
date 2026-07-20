@@ -330,8 +330,38 @@ a{color:inherit;text-decoration:none}
 .mem-input[type="date"]{color-scheme:dark}
 .pava-photo{background-size:cover;background-position:center;color:transparent}
 
-/* embedded module (full app in-frame) */
-.embed-frame{display:block;width:100%;height:100%;border:0;background:#fff}
+/* Employee Task Monitoring sheets (native, mirrors msma-task-monitor) */
+.etm-emp{margin-bottom:26px}
+.etm-emp-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.etm-emp-name{font-weight:700}
+.etm-emp-sub{color:var(--dim);font-size:.74rem}
+.etm-table{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card-2)}
+.etm-row{
+  display:grid;grid-template-columns:112px minmax(160px,1.2fr) minmax(140px,1fr) 112px 108px minmax(120px,.8fr) 34px;
+  border-bottom:1px solid var(--line);align-items:stretch;
+}
+.etm-row:last-child{border-bottom:none}
+.etm-row>div{padding:8px 10px;display:flex;align-items:center;min-width:0}
+.etm-row.head{background:rgba(255,255,255,.02);color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.etm-input{width:100%;background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.8rem}
+.etm-input:disabled{color:var(--grey)}
+.etm-input[type="date"]{color-scheme:dark}
+.etm-status{
+  flex:1;align-self:center;display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;border-radius:7px;color:#0A1628;min-height:28px;cursor:pointer;padding:2px 6px;
+}
+.etm-status[data-s="Pending"]{background:var(--amber)}
+.etm-status[data-s="Ongoing"]{background:var(--blue)}
+.etm-status[data-s="Done"]{background:var(--lime)}
+.etm-status:disabled{cursor:default;opacity:.85}
+.etm-del{color:var(--red);font-size:.85rem;visibility:hidden}
+.etm-row:hover .etm-del{visibility:visible}
+.etm-add{padding:9px 12px;color:var(--dim);font-size:.8rem;cursor:pointer}
+.etm-add:hover{color:var(--white);background:rgba(163,197,255,.03)}
+@media(max-width:820px){
+  .etm-row{grid-template-columns:minmax(120px,1fr) 96px 96px 30px}
+  .etm-row>div:nth-child(1),.etm-row>div:nth-child(3),.etm-row>div:nth-child(6){display:none}
+}
 
 /* coming soon board */
 .soonboard{
@@ -428,6 +458,7 @@ a{color:inherit;text-decoration:none}
         <button class="sb-item" data-board="tasks" data-cluster="rpm">RPM Cluster</button>
         <button class="sb-item" data-board="tasks" data-cluster="ads">ADS Cluster</button>
         <button class="sb-item" data-board="tasks" data-cluster="vcm">VCM Cluster</button>
+        <button class="sb-item" data-board="tasks" data-cluster="intern">Interns</button>
       </div>
     </div>
     <button class="sb-item" data-board="tax">Tax Compliance System</button>
@@ -629,7 +660,7 @@ var STATUS_LABEL = { done: 'Done', working: 'Working on it', stuck: 'Stuck', rev
 
 var BOARDS = {
   dashboard: { title: 'Dashboard', summaryView: true },
-  tasks: { title: 'Employee Task Monitoring', embed: 'https://tasks.msma.work' },
+  tasks: { title: 'Employee Task Monitoring', etmView: true },
   tax: { title: 'Tax Compliance System', desc: '', soon: 'This module is being built next — the BIR filing pipeline will live here.' },
   audit: { title: 'Audit', desc: '', soon: 'This module is being built next — engagement stages across clients will live here.' },
   books: { title: 'Bookkeeping', desc: '', soon: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
@@ -704,6 +735,7 @@ function startSync(){
         label: u.username || u.fullName || u.email || d.id.slice(0, 6),
         photo: u.photo || null
       };
+      if (u.email) EMAILS_MAP[String(u.email).toLowerCase()] = d.id;
     });
     VIEW.forEach(function(v){ v.label = ownerLabel(v.uid, v.label); });
     if (current === 'dashboard' || current === 'tasks') render(current);
@@ -758,44 +790,7 @@ function render(boardKey){
   main.style.padding = '';
   if (b.membersView) { renderMembers(); return; }
   if (b.summaryView) { renderSummary(); return; }
-  if (b.embed) {
-    // The full app lives at its own subdomain (same site, so its session
-    // cookies work inside the frame). Single sign-on: POST the signed-in
-    // user's Firebase ID token to the app's /api/sso, which verifies it,
-    // matches the employee by email, and opens their cluster directly.
-    main.style.padding = '0';
-    main.innerHTML = '<iframe class="embed-frame" name="embed-frame" src="about:blank" title="' + esc(b.title) + '"></iframe>';
-    var frame = main.querySelector('iframe');
-    var eu = firebase.auth().currentUser;
-    if (!eu || (IS_ADMIN && !EMBED_CLUSTER)) { frame.src = b.embed; return; }
-    // Members: cluster comes from the Members registry so SSO lands or
-    // provisions them in the right place. Admin: the picked cluster is
-    // sent instead, and /api/sso grants the admin unlock — no password.
-    var clusterReady = IS_ADMIN ? Promise.resolve(EMBED_CLUSTER) :
-      MY_CLUSTER !== null ? Promise.resolve(MY_CLUSTER) :
-      db.collection('members').doc((eu.email || '').toLowerCase()).get().then(function(d){
-        MY_CLUSTER = (d.exists && (d.data().cluster || '')) || '';
-        return MY_CLUSTER;
-      }).catch(function(){ return ''; });
-    Promise.all([eu.getIdToken(), clusterReady]).then(function(vals){
-      var f = document.createElement('form');
-      f.method = 'POST';
-      f.action = b.embed + '/api/sso';
-      f.target = 'embed-frame';
-      f.style.display = 'none';
-      [['token', vals[0]], ['cluster', (vals[1] || '').toLowerCase()], ['name', MY_LABEL || '']].forEach(function(pair){
-        var inp = document.createElement('input');
-        inp.type = 'hidden';
-        inp.name = pair[0];
-        inp.value = pair[1];
-        f.appendChild(inp);
-      });
-      document.body.appendChild(f);
-      f.submit();
-      f.remove();
-    }).catch(function(){ frame.src = b.embed; });
-    return;
-  }
+  if (b.etmView) { renderETM(); return; }
   if (b.soon) {
     main.innerHTML = '<div class="board-head"><h1>' + esc(b.title) + '</h1></div>' +
       '<div class="board-tabs"></div><div style="height:20px"></div>' +
@@ -1354,6 +1349,175 @@ function renderSummary(){
   });
   main.querySelectorAll('.emp-card').forEach(function(el){
     el.addEventListener('click', function(){ render('tasks'); });
+  });
+}
+
+/* ---------- Employee Task Monitoring (native, mirrors msma-task-monitor) ----------
+   Fresh workspace data: one sheet doc per member at members/{email}/sheet/main
+   holding a tasks array. Roster comes from the Members registry per cluster.
+   The original task monitor app and its database are untouched. */
+var ETM_UNSUBS = [];
+var ETM_SUBBED = {};   // email -> true once its sheet listener is attached
+var ETM_SHEETS = {};   // email -> tasks array
+var ETM_ROSTER = [];   // [{ email }]
+var EMAILS_MAP = {};   // profile email -> uid (filled from the users snapshot)
+var ETM_STATUS_CYCLE = ['Pending', 'Ongoing', 'Done'];
+
+function etmTeardown(){
+  ETM_UNSUBS.forEach(function(u){ u(); });
+  ETM_UNSUBS = [];
+  ETM_SUBBED = {};
+  ETM_SHEETS = {};
+  ETM_ROSTER = [];
+}
+function etmCluster(){
+  return ((IS_ADMIN ? EMBED_CLUSTER : MY_CLUSTER) || '').toUpperCase();
+}
+function myEmailKey(){
+  var eu = firebase.auth().currentUser;
+  return ((eu && eu.email) || '').toLowerCase();
+}
+function canEditSheet(email){
+  return IS_ADMIN || email === myEmailKey();
+}
+function newTaskId(){
+  return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function sheetRef(email){
+  return db.collection('members').doc(email).collection('sheet').doc('main');
+}
+function persistSheet(email){
+  sheetRef(email).set({ tasks: ETM_SHEETS[email] || [] }).catch(syncError);
+}
+
+function renderETM(){
+  etmTeardown();
+  var cluster = etmCluster();
+  var head = '<div class="board-head"><h1>Employee Task Monitoring' +
+    (cluster ? ' — ' + esc(cluster) + (cluster === 'INTERN' ? 's' : ' Cluster') : '') + '</h1>' +
+    '<div class="desc">Weekly deliverables per member. Everyone sees the cluster; you edit only your own sheet.</div></div>';
+
+  if (!cluster) {
+    main.innerHTML = head + '<div style="height:20px"></div><div class="soonboard"><b>' +
+      (IS_ADMIN ? 'Pick a cluster' : 'No cluster assigned yet') + '</b>' +
+      (IS_ADMIN
+        ? 'Choose RPM, ADS, VCM, or Interns from the Employee Task Monitoring dropdown in the sidebar.'
+        : 'Ask the administrator to add your email to a cluster in the Members module.') + '</div>';
+    if (!IS_ADMIN && MY_CLUSTER === null) {
+      db.collection('members').doc(myEmailKey()).get().then(function(d){
+        MY_CLUSTER = (d.exists && (d.data().cluster || '')) || '';
+        if (current === 'tasks') renderETM();
+      }).catch(function(){ MY_CLUSTER = ''; });
+    }
+    return;
+  }
+
+  main.innerHTML = head + '<div style="height:8px"></div>' +
+    '<div id="etm-list"><div class="soonboard"><b>Loading sheets…</b>If this doesn’t load, check your connection.</div></div>';
+
+  var unsub = db.collection('members').where('cluster', '==', cluster).onSnapshot(function(snap){
+    ETM_ROSTER = [];
+    snap.forEach(function(d){ ETM_ROSTER.push({ email: d.id }); });
+    ETM_ROSTER.sort(function(a, b){ return a.email.localeCompare(b.email); });
+    ETM_ROSTER.forEach(function(m){
+      if (ETM_SUBBED[m.email]) return;
+      ETM_SUBBED[m.email] = true;
+      var u2 = sheetRef(m.email).onSnapshot(function(doc){
+        ETM_SHEETS[m.email] = (doc.exists && doc.data().tasks) || [];
+        if (current === 'tasks' && !doc.metadata.hasPendingWrites) renderEtmList();
+      }, syncError);
+      ETM_UNSUBS.push(u2);
+    });
+    if (current === 'tasks') renderEtmList();
+  }, syncError);
+  ETM_UNSUBS.push(unsub);
+}
+
+function etmRow(email, t, i, editable){
+  var dis = editable ? '' : ' disabled';
+  return '<div class="etm-row" data-email="' + esc(email) + '" data-i="' + i + '">' +
+    '<div><input class="etm-input" type="date" data-f="date" value="' + esc(t.date || '') + '" aria-label="Date"' + dis + '></div>' +
+    '<div><input class="etm-input" data-f="task" value="' + esc(t.task || '') + '" placeholder="Task"' + dis + '></div>' +
+    '<div><input class="etm-input" data-f="details" value="' + esc(t.details || '') + '" placeholder="Details"' + dis + '></div>' +
+    '<div><input class="etm-input" type="date" data-f="due" value="' + esc(t.due || '') + '" aria-label="Due date"' + dis + '></div>' +
+    '<div><button class="etm-status" data-s="' + esc(t.status || 'Pending') + '" title="Click to change status"' + dis + '>' + esc(t.status || 'Pending') + '</button></div>' +
+    '<div><input class="etm-input" data-f="help" value="' + esc(t.help || '') + '" placeholder="Help needed?"' + dis + '></div>' +
+    '<div>' + (editable ? '<button class="etm-del" title="Delete row" aria-label="Delete row">✕</button>' : '') + '</div></div>';
+}
+
+function renderEtmList(){
+  var listEl = document.getElementById('etm-list');
+  if (!listEl) return;
+  if (!ETM_ROSTER.length) {
+    listEl.innerHTML = '<div class="soonboard"><b>No members in this cluster yet</b>Add member emails in the Members module and assign them here.</div>';
+    return;
+  }
+  listEl.innerHTML = ETM_ROSTER.map(function(m, idx){
+    var uid = EMAILS_MAP[m.email];
+    var label = (uid && USERS_MAP[uid] && USERS_MAP[uid].label) || m.email.split('@')[0];
+    var tasks = ETM_SHEETS[m.email] || [];
+    var editable = canEditSheet(m.email);
+    return '<div class="etm-emp"><div class="etm-emp-head">' + pavaHtml(uid, label, empColor(idx)) +
+      '<div><div class="etm-emp-name">' + esc(label) + '</div>' +
+      '<div class="etm-emp-sub">' + esc(m.email) + ' · ' + tasks.length + ' task' + (tasks.length === 1 ? '' : 's') + '</div></div></div>' +
+      '<div class="etm-table">' +
+      '<div class="etm-row head"><div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div><div></div></div>' +
+      tasks.map(function(t, i){ return etmRow(m.email, t, i, editable); }).join('') +
+      (editable ? '<div class="etm-add" data-email="' + esc(m.email) + '">＋ Add task…</div>' : '') +
+      '</div></div>';
+  }).join('');
+  wireEtm();
+}
+
+function wireEtm(){
+  var listEl = document.getElementById('etm-list');
+  listEl.querySelectorAll('.etm-input').forEach(function(inp){
+    inp.addEventListener('change', function(){
+      var row = inp.closest('.etm-row');
+      var email = row.getAttribute('data-email');
+      if (!canEditSheet(email)) return;
+      var t = (ETM_SHEETS[email] || [])[+row.getAttribute('data-i')];
+      if (!t) return;
+      t[inp.getAttribute('data-f')] = inp.value;
+      persistSheet(email);
+    });
+  });
+  listEl.querySelectorAll('.etm-status').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var row = btn.closest('.etm-row');
+      var email = row.getAttribute('data-email');
+      if (!canEditSheet(email)) return;
+      var t = (ETM_SHEETS[email] || [])[+row.getAttribute('data-i')];
+      if (!t) return;
+      var next = ETM_STATUS_CYCLE[(ETM_STATUS_CYCLE.indexOf(t.status || 'Pending') + 1) % ETM_STATUS_CYCLE.length];
+      t.status = next;
+      btn.setAttribute('data-s', next);
+      btn.textContent = next;
+      persistSheet(email);
+    });
+  });
+  listEl.querySelectorAll('.etm-del').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var row = btn.closest('.etm-row');
+      var email = row.getAttribute('data-email');
+      if (!canEditSheet(email)) return;
+      (ETM_SHEETS[email] || []).splice(+row.getAttribute('data-i'), 1);
+      persistSheet(email);
+      renderEtmList();
+    });
+  });
+  listEl.querySelectorAll('.etm-add').forEach(function(add){
+    add.addEventListener('click', function(){
+      var email = add.getAttribute('data-email');
+      if (!canEditSheet(email)) return;
+      ETM_SHEETS[email] = ETM_SHEETS[email] || [];
+      ETM_SHEETS[email].push({ id: newTaskId(), date: calTodayIso(), task: '', details: '', due: '', status: 'Pending', help: '' });
+      persistSheet(email);
+      renderEtmList();
+      var rows = listEl.querySelectorAll('.etm-row[data-email="' + email + '"]');
+      var last = rows[rows.length - 1];
+      if (last) { var ti = last.querySelector('input[data-f="task"]'); if (ti) ti.focus(); }
+    });
   });
 }
 

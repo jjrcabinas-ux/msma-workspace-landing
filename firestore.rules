@@ -14,8 +14,16 @@ service cloud.firestore {
     // Member registry, doc id = lowercase email. Admin manages it; a signed-in
     // user may only check their own membership (the registration gate).
     match /members/{email} {
-      allow get: if isAdmin() || (request.auth != null && request.auth.token.email.lower() == email);
-      allow list, create, update, delete: if isAdmin();
+      allow get: if isStaff() || (request.auth != null && request.auth.token.email.lower() == email);
+      allow list: if isStaff();
+      allow create, update, delete: if isAdmin();
+    }
+    // Employee Task Monitoring sheets (native module, fresh data):
+    // one doc per member holding their deliverables. Everyone on staff
+    // can read the cluster sheets; each member writes only their own.
+    match /members/{email}/sheet/{doc} {
+      allow read: if isStaff();
+      allow write: if isAdmin() || (isStaff() && request.auth.token.email.lower() == email);
     }
     // Personal boards: each member reads/writes only their own; admin sees all.
     match /users/{uid}/boards/{board} {
