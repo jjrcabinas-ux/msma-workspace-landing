@@ -8,13 +8,15 @@ import type { UserProfile } from '@/lib/types';
 import { useUsersMap } from '@/hooks/useUsersMap';
 import Topbar from '@/components/Topbar';
 import Sidebar, { type BoardKey } from '@/components/Sidebar';
-import Dashboard from '@/components/Dashboard';
 import Etm from '@/components/Etm';
 import MembersAdmin from '@/components/MembersAdmin';
 import UsernamePrompt from '@/components/UsernamePrompt';
 import ProfileModal from '@/components/ProfileModal';
 
 const SOON: Partial<Record<BoardKey, { title: string; note: string }>> = {
+  // Deliberately parked: the Dashboard gets finalized after all the module
+  // tabs are done (Dashboard.tsx holds the earlier draft).
+  dashboard: { title: 'Dashboard', note: 'The firm-wide dashboard is being finalized last — module summaries live inside each tab for now.' },
   tax: { title: 'Tax Compliance System', note: 'This module is being built next — the BIR filing pipeline will live here.' },
   audit: { title: 'Audit', note: 'This module is being built next — engagement stages across clients will live here.' },
   books: { title: 'Bookkeeping', note: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
@@ -96,9 +98,6 @@ export default function Shell({ user }: { user: User }) {
       <div className="shell">
         <Sidebar board={board} etmCluster={etmCluster} isAdmin={isAdmin} open={sidebarOpen} onPick={pickBoard} />
         <main className="main">
-          {board === 'dashboard' && (
-            <Dashboard user={user} usersMap={usersMap} myLabel={myLabel} onOpenTasks={() => pickBoard('tasks')} />
-          )}
           {board === 'tasks' && (
             <Etm
               cluster={activeCluster}
