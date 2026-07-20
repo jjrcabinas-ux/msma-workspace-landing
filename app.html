@@ -376,40 +376,75 @@ var BOARDS = {
 var current = 'dashboard';
 var main = document.getElementById('main');
 
-/* ---------- Firestore sync ---------- */
+/* ---------- Firestore sync: personal boards, consolidated for admin ---------- */
 var db = firebase.firestore();
-var SYNC_BOARDS = ['dashboard'];
-var seeded = {};
 var syncStarted = false;
+var VIEW = [];        // [{ ref, uid, label, groups }] — one entry per owner
+var USERS_MAP = {};   // uid -> username/email label
+var mySeeded = false;
+
+var DEFAULT_GROUPS = [
+  { name: 'This week', color: 'var(--red)', items: [] },
+  { name: 'Coming up', color: 'var(--amber)', items: [] },
+  { name: 'Done', color: 'var(--lime)', items: [] }
+];
+
+function ownerLabel(uid, fallback){
+  return USERS_MAP[uid] || fallback || uid.slice(0, 6);
+}
 
 function startSync(){
   if (syncStarted) return;
   syncStarted = true;
-  SYNC_BOARDS.forEach(function(key){
-    db.collection('boards').doc(key).onSnapshot(function(doc){
-      if (doc.exists) {
-        var d = doc.data();
-        if (d && d.groups) {
-          BOARDS[key].groups = d.groups;
-          if (current === key && !doc.metadata.hasPendingWrites) render(key);
-        }
-      } else if (!seeded[key]) {
-        // First run ever: seed Firestore with the starter data.
-        seeded[key] = true;
-        db.collection('boards').doc(key).set({
-          title: BOARDS[key].title,
-          groups: BOARDS[key].groups
-        }).catch(syncError);
-      }
-    }, syncError);
-  });
-}
-function persist(){
-  if (SYNC_BOARDS.indexOf(current) === -1) return;
-  db.collection('boards').doc(current).set({
-    title: BOARDS[current].title,
-    groups: BOARDS[current].groups
+  var user = firebase.auth().currentUser;
+  if (!user) return;
+  var myRef = db.collection('users').doc(user.uid).collection('boards').doc('dashboard');
+
+  // Make sure my own board exists (admin included — their items join the view).
+  myRef.get().then(function(doc){
+    if (!doc.exists && !mySeeded) {
+      mySeeded = true;
+      myRef.set({ groups: DEFAULT_GROUPS }).catch(syncError);
+    }
   }).catch(syncError);
+
+  if (IS_ADMIN) {
+    db.collection('users').onSnapshot(function(snap){
+      snap.forEach(function(d){
+        var u = d.data() || {};
+        USERS_MAP[d.id] = u.username || u.email || d.id.slice(0, 6);
+      });
+      VIEW.forEach(function(v){ v.label = ownerLabel(v.uid, v.label); });
+      if (current === 'dashboard') render('dashboard');
+    }, function(){ /* labels are cosmetic — ignore */ });
+
+    db.collectionGroup('boards').onSnapshot(function(snap){
+      var entries = [];
+      snap.forEach(function(d){
+        if (d.id !== 'dashboard') return;
+        var owner = d.ref.parent.parent;
+        if (!owner || owner.parent.id !== 'users') return;
+        entries.push({ ref: d.ref, uid: owner.id, label: ownerLabel(owner.id), groups: (d.data() || {}).groups || [] });
+      });
+      entries.sort(function(a, b){
+        if (a.uid === user.uid) return -1;
+        if (b.uid === user.uid) return 1;
+        return a.label.localeCompare(b.label);
+      });
+      VIEW = entries;
+      if (current === 'dashboard' && !snap.metadata.hasPendingWrites) render('dashboard');
+    }, syncError);
+  } else {
+    myRef.onSnapshot(function(doc){
+      VIEW = [{ ref: myRef, uid: user.uid, label: '', groups: (doc.data() || {}).groups || [] }];
+      if (current === 'dashboard' && !doc.metadata.hasPendingWrites) render('dashboard');
+    }, syncError);
+  }
+}
+function persistOwner(oi){
+  var v = VIEW[oi];
+  if (!v) return;
+  v.ref.set({ groups: v.groups }, { merge: true }).catch(syncError);
 }
 function syncError(err){
   console.error('Firestore sync error:', err);
@@ -447,23 +482,35 @@ function render(boardKey){
     '<div class="tool">🔍 <input id="board-filter" placeholder="Filter items" aria-label="Filter items"></div>' +
     '<div class="tool">👤 Person</div><div class="tool">⇅ Sort</div></div>';
 
-  b.groups.forEach(function(g, gi){
-    html += '<div class="group" data-gi="' + gi + '">' +
-      '<div class="group-head"><span class="caret">▼</span>' +
-      '<span class="group-title" style="color:' + g.color + '">' + esc(g.name) + '</span>' +
-      '<span class="group-count">' + g.items.length + ' items</span></div>' +
-      '<div class="gtable" style="--gcolor:' + g.color + '">' +
-      '<div class="grow head"><div>Item</div><div>Owner</div><div>Status</div><div>Due</div></div>';
-    g.items.forEach(function(it, ii){
-      var p = PEOPLE[it.p] || [it.p, 'var(--blue)'];
-      html += '<div class="grow item" data-name="' + esc((it.name + ' ' + (it.chip || '')).toLowerCase()) + '">' +
-        '<div>' + (it.chip ? '<span class="form-chip">' + esc(it.chip) + '</span>' : '') + '<span class="name">' + esc(it.name) + '</span></div>' +
-        '<div class="person"><span class="pava" style="background:' + p[1] + '">' + esc(p[0]) + '</span> ' + esc(it.p) + '</div>' +
-        '<div><button class="status" data-s="' + it.s + '" data-gi="' + gi + '" data-ii="' + ii + '" title="Click to change status">' + STATUS_LABEL[it.s] + '</button></div>' +
-        '<div><span class="due">' + esc(it.due) + '</span></div></div>';
+  if (!VIEW.length) {
+    html += '<div class="soonboard"><b>Loading your board…</b>If this doesn’t load, check your connection.</div>';
+    main.innerHTML = html;
+    wireBoard();
+    return;
+  }
+  VIEW.forEach(function(v, oi){
+    if (IS_ADMIN && VIEW.length > 0) {
+      var lbl = v.label || 'Me';
+      html += '<div class="owner-head"><span class="pava" style="background:var(--lime)">' + esc(initialsOf(lbl)) + '</span> ' + esc(lbl) + '</div>';
+    }
+    v.groups.forEach(function(g, gi){
+      html += '<div class="group" data-oi="' + oi + '" data-gi="' + gi + '">' +
+        '<div class="group-head"><span class="caret">▼</span>' +
+        '<span class="group-title" style="color:' + g.color + '">' + esc(g.name) + '</span>' +
+        '<span class="group-count">' + g.items.length + ' items</span></div>' +
+        '<div class="gtable" style="--gcolor:' + g.color + '">' +
+        '<div class="grow head"><div>Item</div><div>Owner</div><div>Status</div><div>Due</div></div>';
+      g.items.forEach(function(it, ii){
+        var p = PEOPLE[it.p] || [it.p, 'var(--blue)'];
+        html += '<div class="grow item" data-name="' + esc((it.name + ' ' + (it.chip || '')).toLowerCase()) + '">' +
+          '<div>' + (it.chip ? '<span class="form-chip">' + esc(it.chip) + '</span>' : '') + '<span class="name">' + esc(it.name) + '</span></div>' +
+          '<div class="person"><span class="pava" style="background:' + p[1] + '">' + esc(p[0]) + '</span> ' + esc(it.p) + '</div>' +
+          '<div><button class="status" data-s="' + it.s + '" data-oi="' + oi + '" data-gi="' + gi + '" data-ii="' + ii + '" title="Click to change status">' + STATUS_LABEL[it.s] + '</button></div>' +
+          '<div><span class="due">' + esc(it.due) + '</span></div></div>';
+      });
+      html += '<div class="addrow" data-oi="' + oi + '" data-gi="' + gi + '">＋ <input placeholder="Add item…" aria-label="Add item to ' + esc(g.name) + '"></div>' +
+        '</div></div>';
     });
-    html += '<div class="addrow" data-gi="' + gi + '">＋ <input placeholder="Add item…" aria-label="Add item to ' + esc(g.name) + '"></div>' +
-      '</div></div>';
   });
   main.innerHTML = html;
   wireBoard();
@@ -475,19 +522,30 @@ function wireBoard(){
   });
   main.querySelectorAll('.status').forEach(function(s){
     s.addEventListener('click', function(){
+      var oi = +s.getAttribute('data-oi');
+      var v = VIEW[oi];
+      if (!v) return;
       var next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.getAttribute('data-s')) + 1) % STATUS_CYCLE.length];
       s.setAttribute('data-s', next);
       s.textContent = STATUS_LABEL[next];
-      BOARDS[current].groups[+s.getAttribute('data-gi')].items[+s.getAttribute('data-ii')].s = next;
-      persist();
+      v.groups[+s.getAttribute('data-gi')].items[+s.getAttribute('data-ii')].s = next;
+      persistOwner(oi);
     });
   });
   main.querySelectorAll('.addrow input').forEach(function(inp){
     inp.addEventListener('keydown', function(e){
       if (e.key !== 'Enter' || !inp.value.trim()) return;
-      var gi = +inp.closest('.addrow').getAttribute('data-gi');
-      BOARDS[current].groups[gi].items.push({ name: inp.value.trim(), p: 'JC', s: 'working', due: '—' });
-      persist();
+      var row = inp.closest('.addrow');
+      var oi = +row.getAttribute('data-oi');
+      var v = VIEW[oi];
+      if (!v) return;
+      v.groups[+row.getAttribute('data-gi')].items.push({
+        name: inp.value.trim(),
+        p: initialsOf(v.label || MY_LABEL),
+        s: 'working',
+        due: '—'
+      });
+      persistOwner(oi);
       render(current);
     });
   });

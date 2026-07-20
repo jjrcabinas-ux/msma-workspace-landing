@@ -17,8 +17,14 @@ service cloud.firestore {
       allow get: if isAdmin() || (request.auth != null && request.auth.token.email.lower() == email);
       allow list, create, update, delete: if isAdmin();
     }
-    match /boards/{board} {
-      allow read, write: if isStaff();
+    // Personal boards: each member reads/writes only their own; admin sees all.
+    match /users/{uid}/boards/{board} {
+      allow read, write: if isAdmin() || (isStaff() && request.auth.uid == uid);
+    }
+    // Collection-group read so the admin's consolidated dashboard can query
+    // every user's boards at once.
+    match /{path=**}/boards/{board} {
+      allow read: if isAdmin();
     }
     // Username -> email mapping. Single-doc reads are open so the login
     // form can resolve a username before authentication; listing is blocked.
