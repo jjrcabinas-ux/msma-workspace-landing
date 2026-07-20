@@ -324,6 +324,9 @@ a{color:inherit;text-decoration:none}
 .mem-input[type="date"]{color-scheme:dark}
 .pava-photo{background-size:cover;background-position:center;color:transparent}
 
+/* embedded module (full app in-frame) */
+.embed-frame{display:block;width:100%;height:100%;border:0;background:#fff}
+
 /* coming soon board */
 .soonboard{
   border:1px dashed var(--line-strong);border-radius:14px;padding:60px 30px;text-align:center;color:var(--grey);
@@ -611,7 +614,7 @@ var STATUS_LABEL = { done: 'Done', working: 'Working on it', stuck: 'Stuck', rev
 
 var BOARDS = {
   dashboard: { title: 'Dashboard', summaryView: true },
-  tasks: { title: 'Employee Task Monitoring', desc: 'Personal boards per member — switch between the whole team and your own items.' },
+  tasks: { title: 'Employee Task Monitoring', embed: 'https://tasks.msma.work' },
   tax: { title: 'Tax Compliance System', desc: '', soon: 'This module is being built next — the BIR filing pipeline will live here.' },
   audit: { title: 'Audit', desc: '', soon: 'This module is being built next — engagement stages across clients will live here.' },
   books: { title: 'Bookkeeping', desc: '', soon: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
@@ -733,8 +736,16 @@ function render(boardKey){
   document.querySelectorAll('.sb-item[data-board]').forEach(function(el){
     el.classList.toggle('active', el.getAttribute('data-board') === boardKey);
   });
+  main.style.padding = '';
   if (b.membersView) { renderMembers(); return; }
   if (b.summaryView) { renderSummary(); return; }
+  if (b.embed) {
+    // The full app lives at its own subdomain (same site, so its login
+    // cookies work inside the frame) and brings its own sidebar.
+    main.style.padding = '0';
+    main.innerHTML = '<iframe class="embed-frame" src="' + b.embed + '" title="' + esc(b.title) + '"></iframe>';
+    return;
+  }
   if (b.soon) {
     main.innerHTML = '<div class="board-head"><h1>' + esc(b.title) + '</h1></div>' +
       '<div class="board-tabs"></div><div style="height:20px"></div>' +
