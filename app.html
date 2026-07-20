@@ -633,6 +633,7 @@ var VIEW = [];        // [{ ref, uid, label, groups }] — one entry per owner
 var USERS_MAP = {};   // uid -> username/email label
 var MY_LABEL = '';    // current user's display name (set in enter)
 var ME_UID = '';      // current user's uid (set in enter)
+var MY_CLUSTER = null; // cluster from the Members registry (lazy-fetched)
 var VIEW_MODE = 'team'; // 'team' = everyone's boards, 'me' = own only
 var BOARD_TAB = 'table'; // dashboard tab: 'table' | 'calendar'
 var mySeeded = false;
@@ -748,25 +749,32 @@ function render(boardKey){
     main.innerHTML = '<iframe class="embed-frame" name="embed-frame" src="about:blank" title="' + esc(b.title) + '"></iframe>';
     var frame = main.querySelector('iframe');
     var eu = firebase.auth().currentUser;
-    if (eu) {
-      eu.getIdToken().then(function(idToken){
-        var f = document.createElement('form');
-        f.method = 'POST';
-        f.action = b.embed + '/api/sso';
-        f.target = 'embed-frame';
-        f.style.display = 'none';
-        var t = document.createElement('input');
-        t.type = 'hidden';
-        t.name = 'token';
-        t.value = idToken;
-        f.appendChild(t);
-        document.body.appendChild(f);
-        f.submit();
-        f.remove();
-      }).catch(function(){ frame.src = b.embed; });
-    } else {
-      frame.src = b.embed;
-    }
+    if (!eu) { frame.src = b.embed; return; }
+    // The Members registry already maps each email to a cluster — send it
+    // (plus the display name) so SSO can land or provision the employee
+    // in the right cluster without ever showing the picker.
+    var clusterReady = MY_CLUSTER !== null ? Promise.resolve(MY_CLUSTER) :
+      db.collection('members').doc((eu.email || '').toLowerCase()).get().then(function(d){
+        MY_CLUSTER = (d.exists && (d.data().cluster || '')) || '';
+        return MY_CLUSTER;
+      }).catch(function(){ return ''; });
+    Promise.all([eu.getIdToken(), clusterReady]).then(function(vals){
+      var f = document.createElement('form');
+      f.method = 'POST';
+      f.action = b.embed + '/api/sso';
+      f.target = 'embed-frame';
+      f.style.display = 'none';
+      [['token', vals[0]], ['cluster', (vals[1] || '').toLowerCase()], ['name', MY_LABEL || '']].forEach(function(pair){
+        var inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = pair[0];
+        inp.value = pair[1];
+        f.appendChild(inp);
+      });
+      document.body.appendChild(f);
+      f.submit();
+      f.remove();
+    }).catch(function(){ frame.src = b.embed; });
     return;
   }
   if (b.soon) {
