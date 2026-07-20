@@ -97,6 +97,12 @@ a{color:inherit;text-decoration:none}
 .sb-item:hover{background:var(--card);color:var(--white)}
 .sb-item.active{background:var(--lime-soft);color:var(--lime);font-weight:600}
 .sb-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.sb-caret{margin-left:auto;font-size:.7rem;color:var(--dim);transition:transform .2s ease}
+.sb-caret.open{transform:rotate(180deg)}
+.sb-sub-wrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .25s ease,opacity .2s ease}
+.sb-sub-wrap.open{grid-template-rows:1fr;opacity:1}
+.sb-sub{overflow:hidden;min-height:0;display:flex;flex-direction:column;gap:2px}
+.sb-sub .sb-item{padding-left:34px;font-size:.88rem}
 
 /* ---------- main / board ---------- */
 .main{flex:1;overflow-y:auto;padding:22px 26px 60px}
@@ -416,7 +422,14 @@ a{color:inherit;text-decoration:none}
 <div class="shell">
   <nav class="sidebar" id="sidebar">
     <button class="sb-item" data-board="dashboard">Dashboard</button>
-    <button class="sb-item" data-board="tasks">Employee Task Monitoring</button>
+    <button class="sb-item" data-board="tasks">Employee Task Monitoring <span class="sb-caret" id="etm-caret" hidden>▾</span></button>
+    <div class="sb-sub-wrap" id="etm-sub">
+      <div class="sb-sub">
+        <button class="sb-item" data-board="tasks" data-cluster="rpm">RPM Cluster</button>
+        <button class="sb-item" data-board="tasks" data-cluster="ads">ADS Cluster</button>
+        <button class="sb-item" data-board="tasks" data-cluster="vcm">VCM Cluster</button>
+      </div>
+    </div>
     <button class="sb-item" data-board="tax">Tax Compliance System</button>
     <button class="sb-item" data-board="audit">Audit</button>
     <button class="sb-item" data-board="books">Bookkeeping</button>
@@ -466,6 +479,8 @@ function enter(user){
   document.getElementById('who-email').textContent = email;
   var mem = document.getElementById('sb-members');
   if (mem) mem.hidden = !IS_ADMIN;
+  var ec = document.getElementById('etm-caret');
+  if (ec) ec.hidden = !IS_ADMIN;
   checkUsername(user, function(d){
     applyProfileToUi(d);
     if (!d.profileComplete) openProfile(d);
@@ -634,6 +649,7 @@ var USERS_MAP = {};   // uid -> username/email label
 var MY_LABEL = '';    // current user's display name (set in enter)
 var ME_UID = '';      // current user's uid (set in enter)
 var MY_CLUSTER = null; // cluster from the Members registry (lazy-fetched)
+var EMBED_CLUSTER = null; // admin-selected cluster for the embedded ETM
 var VIEW_MODE = 'team'; // 'team' = everyone's boards, 'me' = own only
 var BOARD_TAB = 'table'; // dashboard tab: 'table' | 'calendar'
 var mySeeded = false;
@@ -735,7 +751,9 @@ function render(boardKey){
   current = boardKey;
   var b = BOARDS[boardKey];
   document.querySelectorAll('.sb-item[data-board]').forEach(function(el){
-    el.classList.toggle('active', el.getAttribute('data-board') === boardKey);
+    var on = el.getAttribute('data-board') === boardKey &&
+      (el.getAttribute('data-cluster') || null) === (boardKey === 'tasks' ? EMBED_CLUSTER : null);
+    el.classList.toggle('active', on);
   });
   main.style.padding = '';
   if (b.membersView) { renderMembers(); return; }
@@ -749,6 +767,12 @@ function render(boardKey){
     main.innerHTML = '<iframe class="embed-frame" name="embed-frame" src="about:blank" title="' + esc(b.title) + '"></iframe>';
     var frame = main.querySelector('iframe');
     var eu = firebase.auth().currentUser;
+    if (IS_ADMIN) {
+      // Admin opens the picked cluster directly and unlocks with the
+      // cluster password — member SSO would drop the admin unlock cookie.
+      frame.src = EMBED_CLUSTER ? b.embed + '/' + EMBED_CLUSTER : b.embed;
+      return;
+    }
     if (!eu) { frame.src = b.embed; return; }
     // The Members registry already maps each email to a cluster — send it
     // (plus the display name) so SSO can land or provision the employee
@@ -1416,7 +1440,16 @@ function addMember(){
 
 document.querySelectorAll('.sb-item[data-board]').forEach(function(el){
   el.addEventListener('click', function(){
-    render(el.getAttribute('data-board'));
+    var board = el.getAttribute('data-board');
+    // Admin: the main ETM item toggles the cluster dropdown; members go
+    // straight in — their cluster is already assigned in Members.
+    if (board === 'tasks' && IS_ADMIN && !el.hasAttribute('data-cluster')) {
+      document.getElementById('etm-sub').classList.toggle('open');
+      document.getElementById('etm-caret').classList.toggle('open');
+      return;
+    }
+    EMBED_CLUSTER = el.getAttribute('data-cluster') || null;
+    render(board);
     document.getElementById('sidebar').classList.remove('open');
   });
 });
