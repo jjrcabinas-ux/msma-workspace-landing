@@ -519,7 +519,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
       <a href="#assistant">Assistant</a>
       <a href="#modules">Modules</a>
     </nav>
-    <a class="btn btn-white btn-sm" href="https://app.msma.work">Sign in</a>
+    <a class="btn btn-white btn-sm" href="/app">Sign in</a>
   </div>
 </header>
 
@@ -533,7 +533,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
       <h1>Unleash the power of intuitive compliance</h1>
       <p>Say goodbye to scattered trackers and spreadsheets. Every deadline, engagement,<br class="lg-br"> task, and workflow the firm runs on — now in one workspace. <span style="display:block">Simple. Unified. Always in control.</span></p>
       <div class="hero-ctas">
-        <a class="btn btn-lime" href="https://app.msma.work">Open Workspace</a>
+        <a class="btn btn-lime" href="/app">Open Workspace</a>
         <a class="btn btn-ghost" href="#features">Learn more ↓</a>
       </div>
 
@@ -740,7 +740,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
     <div class="wrap reveal">
       <h2>See where one workspace can take the firm.</h2>
       <p>The first internal tool you'll love. And the last browser tab you'll ever need.</p>
-      <a class="btn btn-lime" href="https://app.msma.work">Open Workspace</a>
+      <a class="btn btn-lime" href="/app">Open Workspace</a>
     </div>
   </section>
 
@@ -755,7 +755,7 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--lime);outline-offset:
       <nav class="foot-links">
         <a href="#features">Features</a>
         <a href="#assistant">Assistant</a>
-        <a href="https://app.msma.work">Sign in</a>
+        <a href="/app">Sign in</a>
       </nav>
     </div>
     <div class="foot-legal">
@@ -1227,7 +1227,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     if (lastFocus) lastFocus.focus();
   }
 
-  document.querySelectorAll('a[href^="https://app.msma.work"]').forEach(function(a){
+  document.querySelectorAll('a[href="/app"]').forEach(function(a){
     a.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
   });
   document.getElementById('auth-close').addEventListener('click', closeModal);

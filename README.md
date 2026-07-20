@@ -46,8 +46,10 @@ The design is **final and approved**. In particular:
    the hero canvas collapses to ~300px on the left (past bug — do not regress).
 6. **The two `.shot-frame` dashboard-mock markup blocks double as the visual
    spec for the future app shell** — leave them intact.
-7. **CTA links point to `https://app.msma.work`**, which does not exist yet.
-   Leave the links as-is; do not stub or redirect them.
+7. **CTA links point to `/app`** — the live workspace on this same hosting.
+   The sign-in modal intercepts clicks on `a[href="/app"]`; keep hrefs and
+   that selector in sync. (`app.msma.work` remains reserved for a possible
+   future custom domain.)
 
 ## Out of scope (future phases)
 
