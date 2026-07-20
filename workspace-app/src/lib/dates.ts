@@ -38,3 +38,14 @@ export function shiftMonth(year: number, monthIndex0: number, delta: number): { 
 export function monthLabel(year: number, monthIndex0: number): string {
   return `${MON[monthIndex0]} ${year}`;
 }
+
+export function daysBetween(aIso: string, bIso: string): number {
+  const [ay, am, ad] = aIso.split('-').map(Number);
+  const [by, bm, bd] = bIso.split('-').map(Number);
+  return Math.round((new Date(by, bm - 1, bd).getTime() - new Date(ay, am - 1, ad).getTime()) / 86400000);
+}
+
+export function fmtShort(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${MON[m - 1]} ${d}, ${y}`;
+}

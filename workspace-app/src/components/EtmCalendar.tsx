@@ -5,37 +5,24 @@ import { birFilingsForDate, birFilingsForMonth, type BirFiling } from '@/lib/bir
 import { MONFULL, WEEKSHORT, addDaysIso, firstWeekdayOfMonth, lastDayOfMonth, pad2, shiftMonth, todayISO } from '@/lib/dates';
 import ListModal from '@/components/ListModal';
 
-function FilingRow({ f }: { f: BirFiling }) {
-  return (
-    <div className="cal-filing">
-      <span className="cal-code">{f.code}</span>
-      <div className="cal-filing-body">
-        <div className="cal-label">{f.label}</div>
-        <div className="cal-period">{f.periodLabel}</div>
-      </div>
-    </div>
-  );
-}
+export type Assignee = { email: string; label: string };
 
-function DueSection({ title, filings, hot, empty }: { title: string; filings: BirFiling[]; hot?: boolean; empty: string }) {
-  return (
-    <div className="due-wrap">
-      <div className={`due-head${hot ? ' hot' : ''}`}>
-        {title}
-        {filings.length > 0 && <span className="due-count">{filings.length}</span>}
-      </div>
-      {filings.length ? filings.map((f) => <FilingRow key={f.id} f={f} />) : <div className="empty-note">{empty}</div>}
-    </div>
-  );
-}
-
-/** BIR tax calendar, ported from msma-task-monitor's TaxCalendarCard. */
-export default function EtmCalendar() {
+/** BIR tax calendar, ported from msma-task-monitor's TaxCalendarCard.
+ *  Clicking a filing expands an assignment list that adds the filing as a
+ *  task on the picked member's sheet (members: own sheet only). */
+export default function EtmCalendar({
+  assignees,
+  onAssign,
+}: {
+  assignees: Assignee[];
+  onAssign: (email: string, filing: BirFiling) => void;
+}) {
   const today = todayISO();
   const [ty, tm] = today.split('-').map(Number);
   const [year, setYear] = useState(ty);
   const [month, setMonth] = useState(tm - 1);
   const [selected, setSelected] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filings = birFilingsForMonth(year, month);
   const byDay = new Map<number, BirFiling[]>();
@@ -51,12 +38,49 @@ export default function EtmCalendar() {
     const s = shiftMonth(year, month, delta);
     setYear(s.year);
     setMonth(s.monthIndex0);
+    setExpandedId(null);
   }
+
+  function assign(email: string, f: BirFiling) {
+    setExpandedId(null);
+    setSelected(null);
+    onAssign(email, f);
+  }
+
+  const filingRow = (f: BirFiling) => (
+    <div key={f.id}>
+      <button
+        type="button"
+        className="cal-filing cal-filing-btn"
+        onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}
+      >
+        <span className="cal-code">{f.code}</span>
+        <div className="cal-filing-body">
+          <div className="cal-label">{f.label}</div>
+          <div className="cal-period">{f.periodLabel}</div>
+        </div>
+      </button>
+      {expandedId === f.id && (
+        <div className="cal-assign">
+          <div className="cal-assign-title">Add task for</div>
+          {assignees.length ? (
+            assignees.map((a) => (
+              <div className="cal-assign-row" key={a.email} onClick={() => assign(a.email, f)}>
+                {a.label}
+              </div>
+            ))
+          ) : (
+            <div className="empty-note">No one you can assign to in this cluster.</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
       <div className="cal-card">
-        <div className="cal-sub">BIR Tax Calendar — click a marked date to see what’s due</div>
+        <div className="cal-sub">BIR Tax Calendar — click a marked date to see what’s due, click a filing to add it as a task</div>
         <div className="cal-header">
           <button className="cal-nav" aria-label="Previous month" onClick={() => step(-1)}>‹</button>
           <div className="cal-month">{MONFULL[month]} {year}</div>
@@ -95,18 +119,37 @@ export default function EtmCalendar() {
             );
           })}
         </div>
-        <DueSection title="Due Today" filings={birFilingsForDate(today)} hot empty="Nothing due today." />
-        <DueSection title="Upcoming — Tomorrow" filings={birFilingsForDate(addDaysIso(today, 1))} empty="Nothing due tomorrow." />
+        <div className="due-wrap">
+          <div className="due-head hot">
+            Due Today
+            {birFilingsForDate(today).length > 0 && <span className="due-count">{birFilingsForDate(today).length}</span>}
+          </div>
+          {birFilingsForDate(today).length ? birFilingsForDate(today).map(filingRow) : <div className="empty-note">Nothing due today.</div>}
+        </div>
+        <div className="due-wrap">
+          <div className="due-head">
+            Upcoming — Tomorrow
+            {birFilingsForDate(addDaysIso(today, 1)).length > 0 && (
+              <span className="due-count">{birFilingsForDate(addDaysIso(today, 1)).length}</span>
+            )}
+          </div>
+          {birFilingsForDate(addDaysIso(today, 1)).length ? (
+            birFilingsForDate(addDaysIso(today, 1)).map(filingRow)
+          ) : (
+            <div className="empty-note">Nothing due tomorrow.</div>
+          )}
+        </div>
       </div>
 
       {selected && (
         <ListModal
           title={`${MONFULL[Number(selected.split('-')[1]) - 1]} ${Number(selected.split('-')[2])}, ${selected.split('-')[0]}`}
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            setSelected(null);
+            setExpandedId(null);
+          }}
         >
-          {birFilingsForDate(selected).map((f) => (
-            <FilingRow key={f.id} f={f} />
-          ))}
+          {birFilingsForDate(selected).map(filingRow)}
         </ListModal>
       )}
     </>

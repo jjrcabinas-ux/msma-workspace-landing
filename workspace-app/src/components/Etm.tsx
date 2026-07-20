@@ -6,8 +6,10 @@ import { db } from '@/lib/firebase';
 import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
 import { todayISO } from '@/lib/dates';
 import { empColor, newTaskId } from '@/lib/ui';
+import type { BirFiling } from '@/lib/birCalendar';
 import Pava from '@/components/Pava';
 import EtmCalendar from '@/components/EtmCalendar';
+import EtmSummary from '@/components/EtmSummary';
 
 const STATUS_CYCLE: SheetStatus[] = ['Pending', 'Ongoing', 'Done'];
 
@@ -32,7 +34,7 @@ export default function Etm({
   emailToUid: Record<string, string>;
   search: string;
 }) {
-  const [tab, setTab] = useState<'table' | 'calendar'>('table');
+  const [tab, setTab] = useState<'summary' | 'table' | 'calendar'>('summary');
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
 
@@ -81,6 +83,35 @@ export default function Etm({
     persist(email, tasks);
   }
 
+  const labelOf = (email: string) => {
+    const uid = emailToUid[email];
+    return (uid && usersMap[uid]?.label) || email.split('@')[0];
+  };
+
+  // Calendar → sheet: a filing becomes a Pending task due on its BIR date.
+  // Members can only assign to themselves; admin can assign to anyone.
+  const assignees = (isAdmin ? roster : roster.filter((e) => e === myEmail)).map((email) => ({
+    email,
+    label: email === myEmail ? `${labelOf(email)} (me)` : labelOf(email),
+  }));
+
+  function assignFiling(email: string, f: BirFiling) {
+    if (!canEdit(email)) return;
+    persist(email, [
+      ...(sheets[email] || []),
+      {
+        id: newTaskId(),
+        date: todayISO(),
+        task: `${f.code} — ${f.label} (${f.periodLabel})`,
+        details: '',
+        due: f.dueDate,
+        status: 'Pending',
+        help: '',
+      },
+    ]);
+    setTab('table');
+  }
+
   const head = (
     <div className="board-head">
       <h1>
@@ -114,12 +145,22 @@ export default function Etm({
     <>
       {head}
       <div className="board-tabs">
+        <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => setTab('summary')}>Team Summary</div>
         <div className={`btab${tab === 'table' ? ' on' : ''}`} onClick={() => setTab('table')}>Main table</div>
         <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => setTab('calendar')}>Calendar</div>
       </div>
-      {tab === 'calendar' ? (
-        <EtmCalendar />
-      ) : (
+      {tab === 'summary' && (
+        <EtmSummary
+          cluster={cluster}
+          roster={roster}
+          sheets={sheets}
+          usersMap={usersMap}
+          emailToUid={emailToUid}
+          onOpenTable={() => setTab('table')}
+        />
+      )}
+      {tab === 'calendar' && <EtmCalendar assignees={assignees} onAssign={assignFiling} />}
+      {tab === 'table' && (
         <>
           <div style={{ height: 16 }} />
           {!roster.length ? (
