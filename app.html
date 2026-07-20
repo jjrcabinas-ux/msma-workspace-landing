@@ -767,17 +767,12 @@ function render(boardKey){
     main.innerHTML = '<iframe class="embed-frame" name="embed-frame" src="about:blank" title="' + esc(b.title) + '"></iframe>';
     var frame = main.querySelector('iframe');
     var eu = firebase.auth().currentUser;
-    if (IS_ADMIN) {
-      // Admin opens the picked cluster directly and unlocks with the
-      // cluster password — member SSO would drop the admin unlock cookie.
-      frame.src = EMBED_CLUSTER ? b.embed + '/' + EMBED_CLUSTER : b.embed;
-      return;
-    }
-    if (!eu) { frame.src = b.embed; return; }
-    // The Members registry already maps each email to a cluster — send it
-    // (plus the display name) so SSO can land or provision the employee
-    // in the right cluster without ever showing the picker.
-    var clusterReady = MY_CLUSTER !== null ? Promise.resolve(MY_CLUSTER) :
+    if (!eu || (IS_ADMIN && !EMBED_CLUSTER)) { frame.src = b.embed; return; }
+    // Members: cluster comes from the Members registry so SSO lands or
+    // provisions them in the right place. Admin: the picked cluster is
+    // sent instead, and /api/sso grants the admin unlock — no password.
+    var clusterReady = IS_ADMIN ? Promise.resolve(EMBED_CLUSTER) :
+      MY_CLUSTER !== null ? Promise.resolve(MY_CLUSTER) :
       db.collection('members').doc((eu.email || '').toLowerCase()).get().then(function(d){
         MY_CLUSTER = (d.exists && (d.data().cluster || '')) || '';
         return MY_CLUSTER;
