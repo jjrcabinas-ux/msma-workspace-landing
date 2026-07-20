@@ -740,10 +740,33 @@ function render(boardKey){
   if (b.membersView) { renderMembers(); return; }
   if (b.summaryView) { renderSummary(); return; }
   if (b.embed) {
-    // The full app lives at its own subdomain (same site, so its login
-    // cookies work inside the frame) and brings its own sidebar.
+    // The full app lives at its own subdomain (same site, so its session
+    // cookies work inside the frame). Single sign-on: POST the signed-in
+    // user's Firebase ID token to the app's /api/sso, which verifies it,
+    // matches the employee by email, and opens their cluster directly.
     main.style.padding = '0';
-    main.innerHTML = '<iframe class="embed-frame" src="' + b.embed + '" title="' + esc(b.title) + '"></iframe>';
+    main.innerHTML = '<iframe class="embed-frame" name="embed-frame" src="about:blank" title="' + esc(b.title) + '"></iframe>';
+    var frame = main.querySelector('iframe');
+    var eu = firebase.auth().currentUser;
+    if (eu) {
+      eu.getIdToken().then(function(idToken){
+        var f = document.createElement('form');
+        f.method = 'POST';
+        f.action = b.embed + '/api/sso';
+        f.target = 'embed-frame';
+        f.style.display = 'none';
+        var t = document.createElement('input');
+        t.type = 'hidden';
+        t.name = 'token';
+        t.value = idToken;
+        f.appendChild(t);
+        document.body.appendChild(f);
+        f.submit();
+        f.remove();
+      }).catch(function(){ frame.src = b.embed; });
+    } else {
+      frame.src = b.embed;
+    }
     return;
   }
   if (b.soon) {
