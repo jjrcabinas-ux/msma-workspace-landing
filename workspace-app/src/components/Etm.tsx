@@ -24,7 +24,6 @@ export default function Etm({
   myEmail,
   usersMap,
   emailToUid,
-  search,
 }: {
   cluster: string; // uppercase, '' when none picked/assigned
   clusterKnown: boolean;
@@ -32,9 +31,9 @@ export default function Etm({
   myEmail: string;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
-  search: string;
 }) {
   const [tab, setTab] = useState<'summary' | 'table' | 'calendar'>('summary');
+  const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
 
@@ -148,6 +147,21 @@ export default function Etm({
         <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => setTab('summary')}>Team Summary</div>
         <div className={`btab${tab === 'table' ? ' on' : ''}`} onClick={() => setTab('table')}>Main table</div>
         <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => setTab('calendar')}>Calendar</div>
+        {tab === 'table' && (
+          <div className="etm-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Search tasks…"
+              aria-label="Search tasks"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
       </div>
       {tab === 'summary' && (
         <EtmSummary

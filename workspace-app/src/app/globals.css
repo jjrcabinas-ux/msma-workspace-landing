@@ -41,11 +41,6 @@ a{color:inherit;text-decoration:none}
 }
 .tb-brand{display:flex;align-items:flex-end;gap:8px;font-weight:700;font-size:.95rem;letter-spacing:-.02em;white-space:nowrap;line-height:1.05}
 .tb-brand img{height:24px;width:auto;display:block}
-.tb-search{
-  flex:1;max-width:680px;margin:0 auto;display:flex;align-items:center;gap:8px;
-  background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--dim);
-}
-.tb-search input{flex:1;background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.85rem}
 .tb-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 .tb-icon{
   width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--grey);font-size:1rem;
@@ -95,11 +90,18 @@ a{color:inherit;text-decoration:none}
 .main{flex:1;overflow-y:auto;padding:22px 26px 60px}
 .board-head h1{font-size:1.35rem;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
 .board-head .desc{color:var(--grey);font-size:.82rem;margin-top:2px}
-.board-tabs{display:flex;gap:2px;margin:16px 0 0;border-bottom:1px solid var(--line)}
+.board-tabs{display:flex;align-items:center;gap:2px;margin:16px 0 0;border-bottom:1px solid var(--line)}
 .btab{
   padding:8px 14px;font-size:.82rem;color:var(--grey);border-bottom:2px solid transparent;cursor:pointer;
 }
 .btab.on{color:var(--white);border-bottom-color:var(--lime)}
+/* board-scoped search, monday.com-style: lives beside the tabs it filters */
+.etm-search{
+  margin-left:auto;margin-bottom:4px;display:flex;align-items:center;gap:7px;
+  background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--dim);
+}
+.etm-search input{background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.8rem;width:170px}
+.etm-search:focus-within{border-color:var(--line-strong)}
 .toolbar{display:flex;align-items:center;gap:10px;margin:16px 0 20px;flex-wrap:wrap}
 .tool-new{
   background:var(--lime);color:#0A1628;font-weight:700;font-size:.84rem;
@@ -325,7 +327,7 @@ a{color:inherit;text-decoration:none}
   .grow>div:nth-child(2){display:none}
   .grow.head>div:nth-child(2){display:none}
   .main{padding:16px 14px 60px}
-  .tb-search{display:none}
+  .etm-search input{width:110px}
   .two-col{grid-template-columns:1fr}
   .etm-row{grid-template-columns:minmax(120px,1fr) 96px 96px 30px}
   .etm-row>div:nth-child(1),.etm-row>div:nth-child(3),.etm-row>div:nth-child(6){display:none}

@@ -10,8 +10,6 @@ export default function Topbar({
   myEmail,
   isAdmin,
   photo,
-  search,
-  onSearch,
   onBurger,
   onOpenProfile,
 }: {
@@ -19,8 +17,6 @@ export default function Topbar({
   myEmail: string;
   isAdmin: boolean;
   photo: string | null;
-  search: string;
-  onSearch: (q: string) => void;
   onBurger: () => void;
   onOpenProfile: () => void;
 }) {
@@ -41,19 +37,6 @@ export default function Topbar({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="MSMA logo" /> MSMA Workspace
       </a>
-      <div className="tb-search">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>{' '}
-        <input
-          type="search"
-          placeholder="Search items…"
-          aria-label="Search items"
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-        />
-      </div>
       <div className="tb-right">
         <button className="tb-icon" title="Notifications" aria-label="Notifications">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

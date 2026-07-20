@@ -33,7 +33,6 @@ export default function Shell({ user }: { user: User }) {
   const [etmCluster, setEtmCluster] = useState<string | null>(null); // admin-picked, lowercase
   const [myCluster, setMyCluster] = useState<string | null>(null); // from Members registry
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [search, setSearch] = useState('');
 
   const [profile, setProfile] = useState<UserProfile>({});
   const [showUname, setShowUname] = useState(false);
@@ -83,8 +82,6 @@ export default function Shell({ user }: { user: User }) {
         myEmail={myEmail}
         isAdmin={isAdmin}
         photo={myPhoto}
-        search={search}
-        onSearch={setSearch}
         onBurger={() => setSidebarOpen((v) => !v)}
         onOpenProfile={() => {
           getDoc(doc(db, 'users', user.uid))
@@ -106,7 +103,6 @@ export default function Shell({ user }: { user: User }) {
               myEmail={myEmail}
               usersMap={usersMap}
               emailToUid={emailToUid}
-              search={search}
             />
           )}
           {board === 'members' &&
