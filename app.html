@@ -105,7 +105,6 @@ a{color:inherit;text-decoration:none}
   padding:8px 14px;font-size:.82rem;color:var(--grey);border-bottom:2px solid transparent;cursor:pointer;
 }
 .btab.on{color:var(--white);border-bottom-color:var(--lime)}
-.btab.off{opacity:.45;cursor:not-allowed}
 .toolbar{display:flex;align-items:center;gap:10px;margin:16px 0 20px;flex-wrap:wrap}
 .tool-new{
   background:var(--lime);color:#0A1628;font-weight:700;font-size:.84rem;
@@ -175,6 +174,44 @@ a{color:inherit;text-decoration:none}
 .addrow input{
   background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.82rem;flex:1;
 }
+
+/* ---------- BIR tax calendar (ported from msma-task-monitor) ---------- */
+.cal-card{
+  max-width:640px;margin-top:20px;background:var(--card-2);border:1px solid var(--line);
+  border-radius:12px;padding:18px;
+}
+.cal-sub{font-size:.78rem;color:var(--dim);margin-bottom:12px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:1.05rem;color:var(--grey);background:var(--card)}
+.cal-nav:hover{background:var(--bg-soft);color:var(--white)}
+.cal-month{font-size:.9rem;font-weight:700}
+.cal-weekdays,.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-weekdays{margin-bottom:4px}
+.cal-weekday{text-align:center;font-size:.68rem;font-weight:700;color:var(--dim);padding:2px 0}
+.cal-day{position:relative;height:36px;display:flex;align-items:center;justify-content:center;font-size:.8rem;border-radius:8px;color:var(--grey)}
+.cal-day.marked{cursor:pointer;font-weight:700;color:var(--white);background:rgba(163,197,255,.05)}
+.cal-day.marked:hover{background:rgba(163,197,255,.12)}
+.cal-day.today{border:1px solid var(--lime);color:var(--lime)}
+.cal-dot{position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--red)}
+.due-wrap{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.due-head{font-size:.78rem;font-weight:700;color:var(--grey);margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.due-head.hot{color:var(--red)}
+.due-count{font-size:.7rem;font-weight:700;color:#0A1628;background:var(--grey);border-radius:999px;padding:1px 7px;line-height:1.4}
+.due-head.hot .due-count{background:var(--red)}
+.empty-note{font-size:.78rem;color:var(--dim);padding:6px 0}
+.cal-filing{display:flex;align-items:flex-start;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.cal-filing:last-child{border-bottom:none}
+.cal-code{flex:none;width:104px;font-family:'IBM Plex Mono',monospace;font-size:.66rem;font-weight:700;color:var(--lime);background:var(--lime-soft);padding:6px 7px;border-radius:6px;text-align:center;line-height:1.35;overflow-wrap:break-word}
+.cal-filing-body{flex:1;min-width:0}
+.cal-label{font-size:.8rem;font-weight:600;line-height:1.35}
+.cal-period{font-size:.72rem;color:var(--dim);margin-top:3px}
+.cal-overlay{position:fixed;inset:0;background:rgba(4,7,13,.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:24px}
+.cal-modal{background:var(--card);border:1px solid var(--line-strong);border-radius:14px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.cal-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);flex:none}
+.cal-modal-title{font-size:.95rem;font-weight:700}
+.cal-modal-close{width:28px;height:28px;border-radius:8px;background:var(--card-2);color:var(--grey);font-size:1rem;display:grid;place-items:center}
+.cal-modal-close:hover{color:var(--white)}
+.cal-modal-body{overflow-y:auto;padding:10px 20px 18px}
 
 /* members */
 .mem-input{
@@ -384,6 +421,7 @@ var USERS_MAP = {};   // uid -> username/email label
 var MY_LABEL = '';    // current user's display name (set in enter)
 var ME_UID = '';      // current user's uid (set in enter)
 var VIEW_MODE = 'team'; // 'team' = everyone's boards, 'me' = own only
+var BOARD_TAB = 'table'; // dashboard tab: 'table' | 'calendar'
 var mySeeded = false;
 
 var DEFAULT_GROUPS = [
@@ -483,8 +521,17 @@ function render(boardKey){
   }
   var html = '<div class="board-head"><h1>' + esc(b.title) + '</h1>' +
     (b.desc ? '<div class="desc">' + esc(b.desc) + '</div>' : '') + '</div>' +
-    '<div class="board-tabs"><div class="btab on">Main table</div><div class="btab off">Kanban</div><div class="btab off">Calendar</div></div>' +
-    '<div class="toolbar"><button class="tool-new" id="new-item">+ New item</button>' +
+    '<div class="board-tabs">' +
+    '<div class="btab' + (BOARD_TAB === 'table' ? ' on' : '') + '" data-tab="table">Main table</div>' +
+    '<div class="btab' + (BOARD_TAB === 'calendar' ? ' on' : '') + '" data-tab="calendar">Calendar</div></div>';
+  if (BOARD_TAB === 'calendar') {
+    html += calendarHtml();
+    main.innerHTML = html;
+    wireTabs();
+    wireCalendar();
+    return;
+  }
+  html += '<div class="toolbar"><button class="tool-new" id="new-item">+ New item</button>' +
     '<div class="seg" id="view-seg">' +
     '<button data-view="team" class="' + (VIEW_MODE === 'team' ? 'on' : '') + '">Team</button>' +
     '<button data-view="me" class="' + (VIEW_MODE === 'me' ? 'on' : '') + '">My items</button></div></div>';
@@ -524,7 +571,17 @@ function render(boardKey){
   wireBoard();
 }
 
+function wireTabs(){
+  main.querySelectorAll('.btab[data-tab]').forEach(function(t){
+    t.addEventListener('click', function(){
+      BOARD_TAB = t.getAttribute('data-tab');
+      render(current);
+    });
+  });
+}
+
 function wireBoard(){
+  wireTabs();
   main.querySelectorAll('.group-head').forEach(function(h){
     h.addEventListener('click', function(){ h.parentElement.classList.toggle('closed'); });
   });
@@ -569,6 +626,285 @@ function wireBoard(){
     var firstAdd = main.querySelector('.addrow input');
     if (firstAdd) firstAdd.focus();
   });
+}
+
+/* ---------- BIR tax calendar (ported from msma-task-monitor) ----------
+   Rule tables transcribed from BIR's published 2026 Tax Calendar
+   (P&A Grant Thornton edition). Fiscal-year-end rotating items and niche
+   industry items are best-effort reads — verify with BIR before relying
+   on them for compliance-critical dates. */
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONFULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var WEEKSHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var CAL_Y = null, CAL_M = null; // calendar view month (init on first open)
+
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+function toIso(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function calTodayIso(){ return toIso(new Date()); }
+function addDaysIso(iso, n){ var p = iso.split('-'); return toIso(new Date(+p[0], +p[1] - 1, +p[2] + n)); }
+function lastDayOf(y, m0){ return new Date(y, m0 + 1, 0).getDate(); }
+function dueDayNum(y, m0, dueDay){ return dueDay === 'last' ? lastDayOf(y, m0) : dueDay; }
+function calMonthLabel(y, m0){ return MON[m0] + ' ' + y; }
+function calShiftMonth(y, m0, delta){ var t = m0 + delta; return { y: y + Math.floor(t / 12), m0: ((t % 12) + 12) % 12 }; }
+
+var MONTHLY_FIXED_DAY = [
+  { code: '2000 / 2000-OT', label: 'Documentary Stamp Tax (DST)', dueDay: 5 },
+  { code: 'eSales (even TIN)', label: 'CRM/POS Sales Report — TIN ending in an even number', dueDay: 8 },
+  { code: 'ORB Transcript', label: 'Transcript sheets of ORB — alcohol, tobacco, petroleum, non-essential, sweetened beverage, mineral & automobile products', dueDay: 8 },
+  { code: '1600-VT/1600-PT/1606', label: 'Withholding VAT/Percentage Tax on Govt Money Payments (all filers)', dueDay: 10 },
+  { code: '2200C/2200M', label: 'Excise Tax Return', dueDay: 10 },
+  { code: '0605', label: 'BIR Payment Form (B2C VAT — RBEs under 5% SCIT)', dueDay: 10 },
+  { code: '0620', label: 'Monthly Remittance Form', dueDay: 10 },
+  { code: '1601-C / 0619-E / 0619-F', label: 'Withholding Tax Remittance — non-eFPS filers', dueDay: 10 },
+  { code: 'MAP', label: 'Monthly Alphalist of Payees (1600-VT/1600-PT)', dueDay: 10 },
+  { code: 'Sugar Report', label: "Sugar cooperative's list of buyers / refined sugar release information", dueDay: 10 },
+  { code: '2307 (VAT/PT)', label: '2307 distribution to payees (VAT/Percentage Tax)', dueDay: 10 },
+  { code: 'eSales (odd TIN)', label: 'CRM/POS Sales Report — TIN ending in an odd number', dueDay: 10 },
+  { code: '1600-PT/1606 e-Payment', label: 'e-Payment — all filers', dueDay: 15 },
+  { code: 'SAWT (2307)', label: 'Summary Alphalist of Withholding Tax (BIR Form 2307)', dueDay: 15 },
+  { code: 'PhilHealth', label: 'Remittance report & PAR contributions — all employers (PEN ending 0-4 and 5-9)', dueDay: 20 },
+  { code: 'PEZA Monthly Report', label: 'Economic Zone Monthly Performance Report', dueDay: 20 },
+  { code: 'SSS R-5', label: 'Online remittance of contributions (R-5)', dueDay: 'last' }
+];
+var EFPS_GROUPS = [
+  { group: 'E', dueDay: 11 }, { group: 'D', dueDay: 12 }, { group: 'C', dueDay: 13 },
+  { group: 'B', dueDay: 14 }, { group: 'A', dueDay: 15 }
+];
+var HDMF_GROUPS = [
+  { range: 'A-D', dueDay: 14 }, { range: 'E-L', dueDay: 19 },
+  { range: 'M-Q', dueDay: 24 }, { range: 'R-Z', dueDay: 25 }
+];
+var QUARTERLY_FORMS = [
+  { code: '2550Q/2551Q/2550-DS', label: 'Quarterly VAT / Percentage Tax Return', monthsAfterQuarter: 1, dueDay: 25 },
+  { code: '1601-EQ/1601-FQ/1602Q/1603Q/1621', label: 'Quarterly Withholding/Percentage/Amusement Tax + QAP attachments', monthsAfterQuarter: 1, dueDay: 'last' },
+  { code: 'SLSP', label: 'Summary List of Sales/Purchases — non-eFPS filers', monthsAfterQuarter: 1, dueDay: 'last' },
+  { code: 'CRM/POS Sold List', label: 'Summary list of CRM/POS machines sold by dealers/vendors', monthsAfterQuarter: 1, dueDay: 15 },
+  { code: 'Printer Report', label: 'Quarterly Report of Printer of Receipts/Invoices', monthsAfterQuarter: 1, dueDay: 20 },
+  { code: 'OFW/OCW DST Info', label: 'DST-exempt OFW/OCW remittance information', monthsAfterQuarter: 1, dueDay: 20 },
+  { code: '2307 (EWT)', label: '2307 distribution to payees (Expanded Withholding Tax)', monthsAfterQuarter: 1, dueDay: 20 },
+  { code: '1701Q', label: 'Quarterly Income Tax — Individual/Professional', monthsAfterQuarter: 2, dueDay: 15 }
+];
+var FY_ROTATING = [
+  { code: '1700/1701/1701A/1702-RT/EX/MX', label: 'Annual Income Tax Return + attachments', offsetMonths: 4, dueDay: 15 },
+  { code: 'SEC AFS', label: 'Audited Financial Statements — securities registered under RSA/SRC', offsetMonths: 4, dueDay: 15 },
+  { code: 'SEC AFS', label: 'Audited Financial Statements — securities not registered under RSA/SRC', offsetMonths: 5, dueDay: 11 },
+  { code: 'PEZA AFS/ITR', label: 'PEZA AFS & Annual ITR of PEZA-registered enterprises', offsetMonths: 4, dueDay: 15 },
+  { code: 'PEZA Annual Report', label: 'Annual PEZA Report', offsetMonths: 4, dueDay: 'last' },
+  { code: 'BOI Jewelry ORB', label: 'BOI transcript sheets of ORB — qualified jewelry enterprises', offsetMonths: 1, dueDay: 'last' },
+  { code: 'Inventory List', label: 'Inventory list', offsetMonths: 1, dueDay: 'last' },
+  { code: 'CAS Books', label: 'Computerized books of accounts & accounting records (CD-R/DVD-R/optical media)', offsetMonths: 1, dueDay: 'last' }
+];
+var ANNUAL_FIXED = [
+  { code: '1601-C e-Payment (CY)', label: 'e-Payment of withholding tax on compensation — all eFPS filers, calendar year', monthIndex0: 3, dueDay: 15, periodYearOffset: -1 },
+  { code: 'Books of Accounts (CY)', label: 'Bound/loose-leaf books of accounts & accounting records', monthIndex0: 3, dueDay: 15, periodYearOffset: -1 },
+  { code: '1604-C/1604-F', label: 'Annual Alphalist of Employees & Payees', monthIndex0: 0, dueDay: 31, periodYearOffset: -1 },
+  { code: 'Insurance Annual Report', label: 'Annual report to the Insurance Commission — insurance companies', monthIndex0: 3, dueDay: 'last', periodYearOffset: -1 },
+  { code: 'RFC', label: 'Request for Confirmation — tax treaty relief entitlement', monthIndex0: 3, dueDay: 'last', periodYearOffset: -1 },
+  { code: 'Forex Election', label: 'Notarized sworn statement — election to use non-BAP forex rates', monthIndex0: 11, dueDay: 2, periodYearOffset: 1 }
+];
+var SEMIANNUAL = [
+  { code: 'Mines/Quarries Sworn Stmt', label: 'Sworn statements of lessees/concessionaires/owners/operators of mines or quarries, and mineral processors/producers' },
+  { code: 'Automobile Sworn Stmt', label: 'Sworn statements of automobile manufacturers, assemblers or importers' }
+];
+
+function birFilingsForMonth(year, m0){
+  var filings = [];
+  var covered = calShiftMonth(year, m0, -1);
+  var coveredLabel = calMonthLabel(covered.y, covered.m0);
+  var isDecemberCovered = covered.m0 === 11;
+
+  MONTHLY_FIXED_DAY.forEach(function(f){
+    var dueDay = isDecemberCovered && f.code === '1601-C / 0619-E / 0619-F' ? 15 : f.dueDay;
+    filings.push({
+      id: f.code + '-' + covered.y + '-' + pad2(covered.m0 + 1),
+      code: f.code, label: f.label, periodLabel: coveredLabel,
+      dueDate: toIso(new Date(year, m0, dueDayNum(year, m0, dueDay)))
+    });
+  });
+  EFPS_GROUPS.forEach(function(g){
+    filings.push({
+      id: '1601C-eFPS-' + g.group + '-' + covered.y + '-' + pad2(covered.m0 + 1),
+      code: '1601-C / 0619-E / 0619-F',
+      label: 'e-Filing — eFPS filers under Group ' + g.group,
+      periodLabel: coveredLabel,
+      dueDate: toIso(new Date(year, m0, g.dueDay))
+    });
+  });
+  HDMF_GROUPS.forEach(function(g){
+    filings.push({
+      id: 'HDMF-' + g.range + '-' + covered.y + '-' + pad2(covered.m0 + 1),
+      code: 'HDMF MCRF',
+      label: 'Pag-IBIG contributions — employers whose names start with ' + g.range,
+      periodLabel: coveredLabel,
+      dueDate: toIso(new Date(year, m0, g.dueDay))
+    });
+  });
+  QUARTERLY_FORMS.forEach(function(f){
+    var qEnd = calShiftMonth(year, m0, -f.monthsAfterQuarter);
+    if (qEnd.m0 % 3 !== 2) return; // fires only when this month is the actual due month
+    var qi = Math.floor(qEnd.m0 / 3);
+    if (f.code === '1701Q' && qi === 3) return; // Q4 covered by the annual return instead
+    filings.push({
+      id: f.code + '-' + qEnd.y + '-Q' + (qi + 1),
+      code: f.code, label: f.label,
+      periodLabel: 'Q' + (qi + 1) + ' ' + qEnd.y,
+      dueDate: toIso(new Date(year, m0, dueDayNum(year, m0, f.dueDay)))
+    });
+  });
+  // 1702Q — due 60 calendar days after the close of the covered fiscal quarter.
+  for (var back = 1; back <= 3; back++) {
+    var q = calShiftMonth(year, m0, -back);
+    var due = new Date(q.y, q.m0, lastDayOf(q.y, q.m0));
+    due.setDate(due.getDate() + 60);
+    if (due.getFullYear() === year && due.getMonth() === m0) {
+      filings.push({
+        id: '1702Q-' + q.y + '-' + pad2(q.m0 + 1),
+        code: '1702Q',
+        label: 'Quarterly Income Tax — Corporation (fiscal-year filers)',
+        periodLabel: 'TQ ended ' + calMonthLabel(q.y, q.m0),
+        dueDate: toIso(due)
+      });
+    }
+  }
+  FY_ROTATING.forEach(function(f){
+    var fy = calShiftMonth(year, m0, -f.offsetMonths);
+    filings.push({
+      id: f.code + '-' + f.label.slice(0, 8) + '-' + fy.y + '-' + pad2(fy.m0 + 1),
+      code: f.code, label: f.label,
+      periodLabel: 'FY ended ' + calMonthLabel(fy.y, fy.m0),
+      dueDate: toIso(new Date(year, m0, dueDayNum(year, m0, f.dueDay)))
+    });
+  });
+  ANNUAL_FIXED.forEach(function(f){
+    if (m0 !== f.monthIndex0) return;
+    filings.push({
+      id: f.code + '-' + (year + f.periodYearOffset),
+      code: f.code, label: f.label,
+      periodLabel: 'CY ' + (year + f.periodYearOffset),
+      dueDate: toIso(new Date(year, m0, dueDayNum(year, m0, f.dueDay)))
+    });
+  });
+  // Semi-annual sworn statements — due Jan 15 (H2 of prior year) and Jul 15 (H1 of this year)
+  if (m0 === 0 || m0 === 6) {
+    var half = m0 === 0 ? 'second half' : 'first half';
+    var halfYear = m0 === 0 ? year - 1 : year;
+    SEMIANNUAL.forEach(function(s){
+      filings.push({
+        id: s.code + '-' + halfYear + '-' + (m0 === 0 ? 'H2' : 'H1'),
+        code: s.code, label: s.label,
+        periodLabel: half + ' of ' + halfYear,
+        dueDate: toIso(new Date(year, m0, 15))
+      });
+    });
+  }
+  // LGU business tax quarterly installment — Jan/Apr/Jul/Oct 20
+  if (m0 % 3 === 0) {
+    var bq = Math.floor(m0 / 3) + 1;
+    filings.push({
+      id: 'LGU-BizTax-' + year + '-Q' + bq,
+      code: 'LGU Business Tax',
+      label: 'Local business tax — ' + ['1st','2nd','3rd','4th'][bq - 1] + ' quarterly installment',
+      periodLabel: 'CY ' + year,
+      dueDate: toIso(new Date(year, m0, 20))
+    });
+  }
+  // LGU real property tax quarterly installment — Mar/Jun/Sep/Dec last day
+  if (m0 % 3 === 2) {
+    var rq = Math.floor(m0 / 3) + 1;
+    filings.push({
+      id: 'LGU-RPT-' + year + '-Q' + rq,
+      code: 'LGU Real Property Tax',
+      label: 'Real property tax — ' + ['1st','2nd','3rd','4th'][rq - 1] + ' quarterly installment',
+      periodLabel: 'CY ' + year,
+      dueDate: toIso(new Date(year, m0, lastDayOf(year, m0)))
+    });
+  }
+  // Engagement letters for financial audit — rolling monthly, due the 1st
+  var ty = calShiftMonth(year, m0, 14);
+  filings.push({
+    id: 'Audit-Engagement-' + year + '-' + pad2(m0 + 1),
+    code: 'Audit Engagement Letter',
+    label: 'Engagement letters & renewals/subsequent agreements for financial audit by independent CPAs',
+    periodLabel: 'TY beginning ' + calMonthLabel(ty.y, ty.m0),
+    dueDate: toIso(new Date(year, m0, 1))
+  });
+
+  return filings.sort(function(a, b){
+    return a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : a.code.localeCompare(b.code);
+  });
+}
+function birFilingsForDate(iso){
+  var p = iso.split('-');
+  return birFilingsForMonth(+p[0], +p[1] - 1).filter(function(f){ return f.dueDate === iso; });
+}
+
+function filingRow(f){
+  return '<div class="cal-filing"><span class="cal-code">' + esc(f.code) + '</span>' +
+    '<div class="cal-filing-body"><div class="cal-label">' + esc(f.label) + '</div>' +
+    '<div class="cal-period">' + esc(f.periodLabel) + '</div></div></div>';
+}
+function dueSection(title, filings, hot, emptyMsg){
+  var h = '<div class="due-wrap"><div class="due-head' + (hot ? ' hot' : '') + '">' + title +
+    (filings.length ? '<span class="due-count">' + filings.length + '</span>' : '') + '</div>';
+  h += filings.length ? filings.map(filingRow).join('') : '<div class="empty-note">' + emptyMsg + '</div>';
+  return h + '</div>';
+}
+function calendarHtml(){
+  var today = calTodayIso();
+  if (CAL_Y === null) { var tp = today.split('-'); CAL_Y = +tp[0]; CAL_M = +tp[1] - 1; }
+  var byDay = {};
+  birFilingsForMonth(CAL_Y, CAL_M).forEach(function(f){
+    var d = +f.dueDate.split('-')[2];
+    (byDay[d] = byDay[d] || []).push(f);
+  });
+  var first = new Date(CAL_Y, CAL_M, 1).getDay();
+  var dim = lastDayOf(CAL_Y, CAL_M);
+  var html = '<div class="cal-card">' +
+    '<div class="cal-sub">BIR Tax Calendar — click a marked date to see what’s due</div>' +
+    '<div class="cal-header"><button class="cal-nav" id="cal-prev" aria-label="Previous month">‹</button>' +
+    '<div class="cal-month">' + MONFULL[CAL_M] + ' ' + CAL_Y + '</div>' +
+    '<button class="cal-nav" id="cal-next" aria-label="Next month">›</button></div>' +
+    '<div class="cal-weekdays">' + WEEKSHORT.map(function(w){ return '<div class="cal-weekday">' + w + '</div>'; }).join('') + '</div>' +
+    '<div class="cal-days">';
+  for (var i = 0; i < first; i++) html += '<div></div>';
+  for (var d = 1; d <= dim; d++) {
+    var iso = CAL_Y + '-' + pad2(CAL_M + 1) + '-' + pad2(d);
+    var marked = !!byDay[d];
+    html += '<div class="cal-day' + (marked ? ' marked' : '') + (iso === today ? ' today' : '') + '"' +
+      (marked ? ' data-iso="' + iso + '" role="button" tabindex="0"' : '') + '>' + d +
+      (marked ? '<span class="cal-dot"></span>' : '') + '</div>';
+  }
+  html += '</div>' +
+    dueSection('Due Today', birFilingsForDate(today), true, 'Nothing due today.') +
+    dueSection('Upcoming — Tomorrow', birFilingsForDate(addDaysIso(today, 1)), false, 'Nothing due tomorrow.') +
+    '</div>';
+  return html;
+}
+function wireCalendar(){
+  document.getElementById('cal-prev').addEventListener('click', function(){ stepCal(-1); });
+  document.getElementById('cal-next').addEventListener('click', function(){ stepCal(1); });
+  main.querySelectorAll('.cal-day.marked').forEach(function(el){
+    function open(){ openCalDay(el.getAttribute('data-iso')); }
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  });
+}
+function stepCal(delta){
+  var s = calShiftMonth(CAL_Y, CAL_M, delta);
+  CAL_Y = s.y; CAL_M = s.m0;
+  render(current);
+}
+function openCalDay(iso){
+  var p = iso.split('-');
+  var ov = document.createElement('div');
+  ov.className = 'cal-overlay';
+  ov.innerHTML = '<div class="cal-modal" role="dialog" aria-modal="true"><div class="cal-modal-head">' +
+    '<div class="cal-modal-title">' + MONFULL[+p[1] - 1] + ' ' + (+p[2]) + ', ' + p[0] + '</div>' +
+    '<button class="cal-modal-close" aria-label="Close">×</button></div>' +
+    '<div class="cal-modal-body">' + birFilingsForDate(iso).map(filingRow).join('') + '</div></div>';
+  ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+  ov.querySelector('.cal-modal-close').addEventListener('click', function(){ ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 /* ---------- Members (admin only) ---------- */
