@@ -55,7 +55,7 @@ a{color:inherit;text-decoration:none}
 .tb-brand{display:flex;align-items:flex-end;gap:8px;font-weight:700;font-size:.95rem;letter-spacing:-.02em;white-space:nowrap;line-height:1.05}
 .tb-brand img{height:24px;width:auto;display:block}
 .tb-search{
-  flex:1;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:8px;
+  flex:1;max-width:680px;margin:0 auto;display:flex;align-items:center;gap:8px;
   background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--dim);
 }
 .tb-search input{flex:1;background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.85rem}
@@ -118,6 +118,12 @@ a{color:inherit;text-decoration:none}
 }
 .tool:hover{background:var(--card);color:var(--white)}
 .tool input{background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.82rem;width:130px}
+
+/* team / my-items view toggle */
+.seg{display:flex;margin-left:auto;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{padding:7px 14px;font-size:.8rem;font-weight:500;color:var(--grey)}
+.seg button:hover{color:var(--white)}
+.seg button.on{background:var(--lime-soft);color:var(--lime);font-weight:600}
 
 /* owner section (admin consolidated view) */
 .owner-head{
@@ -249,7 +255,7 @@ a{color:inherit;text-decoration:none}
 <header class="topbar">
   <button class="tb-icon tb-burger" id="burger" aria-label="Toggle sidebar">☰</button>
   <a class="tb-brand" href="/"><img src="/logo.png" alt="MSMA logo"> MSMA Workspace</a>
-  <div class="tb-search">🔍 <input id="global-search" type="search" placeholder="Search items…" aria-label="Search items"></div>
+  <div class="tb-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> <input id="global-search" type="search" placeholder="Search items…" aria-label="Search items"></div>
   <div class="tb-right">
     <button class="tb-icon" title="Notifications" aria-label="Notifications"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
     <button class="avatar" id="avatar" aria-label="Account menu">–</button>
@@ -306,6 +312,7 @@ function enter(user){
   var name = user.displayName || email.split('@')[0];
   IS_ADMIN = ADMIN_EMAILS.indexOf(email.toLowerCase()) !== -1;
   MY_LABEL = name;
+  ME_UID = user.uid;
   startSync();
   document.getElementById('avatar').textContent = initialsOf(name) || '?';
   document.getElementById('who-name').textContent = name + (IS_ADMIN ? ' · Admin' : '');
@@ -356,21 +363,7 @@ var STATUS_CYCLE = ['working', 'done', 'stuck', 'review'];
 var STATUS_LABEL = { done: 'Done', working: 'Working on it', stuck: 'Stuck', review: 'For review' };
 
 var BOARDS = {
-  dashboard: {
-    title: 'Dashboard', desc: 'Everything due across the firm — one glance.',
-    groups: [
-      { name: 'Due this week', color: 'var(--red)', items: [
-        { name: '1601-C — file & pay (14 clients)', chip: '1601-C', p: 'JC', s: 'working', due: 'AUG 10' },
-        { name: '0619-E — expanded withholding remittance', chip: '0619-E', p: 'MA', s: 'stuck', due: 'AUG 10' },
-        { name: 'SSS/PhilHealth/Pag-IBIG contributions', chip: 'GOVT', p: 'RD', s: 'working', due: 'AUG 11' } ] },
-      { name: 'Coming up', color: 'var(--amber)', items: [
-        { name: '2550Q — quarterly VAT (9 clients)', chip: '2550Q', p: 'JC', s: 'review', due: 'AUG 25' },
-        { name: '1702Q — quarterly income tax', chip: '1702Q', p: 'MA', s: 'working', due: 'AUG 29' } ] },
-      { name: 'Done this month', color: 'var(--lime)', items: [
-        { name: '1601-C — July batch', chip: '1601-C', p: 'JC', s: 'done', due: 'JUL 10' },
-        { name: '2550M — monthly VAT filers', chip: '2550M', p: 'LS', s: 'done', due: 'JUL 20' } ] }
-    ]
-  },
+  dashboard: { title: 'Dashboard' },
   tasks: { title: 'Employee Task Monitoring', desc: '', soon: 'This module is being built next — weekly assignments and cluster boards will live here.' },
   tax: { title: 'Tax Compliance System', desc: '', soon: 'This module is being built next — the BIR filing pipeline will live here.' },
   audit: { title: 'Audit', desc: '', soon: 'This module is being built next — engagement stages across clients will live here.' },
@@ -389,12 +382,15 @@ var syncStarted = false;
 var VIEW = [];        // [{ ref, uid, label, groups }] — one entry per owner
 var USERS_MAP = {};   // uid -> username/email label
 var MY_LABEL = '';    // current user's display name (set in enter)
+var ME_UID = '';      // current user's uid (set in enter)
+var VIEW_MODE = 'team'; // 'team' = everyone's boards, 'me' = own only
 var mySeeded = false;
 
 var DEFAULT_GROUPS = [
-  { name: 'This week', color: 'var(--red)', items: [] },
-  { name: 'Coming up', color: 'var(--amber)', items: [] },
-  { name: 'Done', color: 'var(--lime)', items: [] }
+  { name: 'Employee Task Monitoring Summary', color: 'var(--blue)', items: [] },
+  { name: 'Tax Compliance System Summary', color: 'var(--lime)', items: [] },
+  { name: 'Audit Summary', color: 'var(--amber)', items: [] },
+  { name: 'Bookkeeping Summary', color: 'var(--red)', items: [] }
 ];
 
 function ownerLabel(uid, fallback){
@@ -413,46 +409,43 @@ function startSync(){
   if (!user) return;
   var myRef = db.collection('users').doc(user.uid).collection('boards').doc('dashboard');
 
-  // Make sure my own board exists (admin included — their items join the view).
+  // Make sure my own board exists. Boards still holding the old empty
+  // default groups are migrated to the module-summary groups.
   myRef.get().then(function(doc){
-    if (!doc.exists && !mySeeded) {
+    var g = (doc.exists && (doc.data() || {}).groups) || [];
+    var allEmpty = g.every(function(x){ return !(x.items || []).length; });
+    var needsSeed = !doc.exists || (allEmpty && (!g.length || g[0].name !== DEFAULT_GROUPS[0].name));
+    if (needsSeed && !mySeeded) {
       mySeeded = true;
       myRef.set({ groups: DEFAULT_GROUPS }).catch(syncError);
     }
   }).catch(syncError);
 
-  if (IS_ADMIN) {
-    db.collection('users').onSnapshot(function(snap){
-      snap.forEach(function(d){
-        var u = d.data() || {};
-        USERS_MAP[d.id] = u.username || u.email || d.id.slice(0, 6);
-      });
-      VIEW.forEach(function(v){ v.label = ownerLabel(v.uid, v.label); });
-      if (current === 'dashboard') render('dashboard');
-    }, function(){ /* labels are cosmetic — ignore */ });
+  db.collection('users').onSnapshot(function(snap){
+    snap.forEach(function(d){
+      var u = d.data() || {};
+      USERS_MAP[d.id] = u.username || u.email || d.id.slice(0, 6);
+    });
+    VIEW.forEach(function(v){ v.label = ownerLabel(v.uid, v.label); });
+    if (current === 'dashboard') render('dashboard');
+  }, function(){ /* labels are cosmetic — ignore */ });
 
-    db.collectionGroup('boards').onSnapshot(function(snap){
-      var entries = [];
-      snap.forEach(function(d){
-        if (d.id !== 'dashboard') return;
-        var owner = d.ref.parent.parent;
-        if (!owner || owner.parent.id !== 'users') return;
-        entries.push({ ref: d.ref, uid: owner.id, label: ownerLabel(owner.id), groups: (d.data() || {}).groups || [] });
-      });
-      entries.sort(function(a, b){
-        if (a.uid === user.uid) return -1;
-        if (b.uid === user.uid) return 1;
-        return a.label.localeCompare(b.label);
-      });
-      VIEW = entries;
-      if (current === 'dashboard' && !snap.metadata.hasPendingWrites) render('dashboard');
-    }, syncError);
-  } else {
-    myRef.onSnapshot(function(doc){
-      VIEW = [{ ref: myRef, uid: user.uid, label: '', groups: (doc.data() || {}).groups || [] }];
-      if (current === 'dashboard' && !doc.metadata.hasPendingWrites) render('dashboard');
-    }, syncError);
-  }
+  db.collectionGroup('boards').onSnapshot(function(snap){
+    var entries = [];
+    snap.forEach(function(d){
+      if (d.id !== 'dashboard') return;
+      var owner = d.ref.parent.parent;
+      if (!owner || owner.parent.id !== 'users') return;
+      entries.push({ ref: d.ref, uid: owner.id, label: ownerLabel(owner.id), groups: (d.data() || {}).groups || [] });
+    });
+    entries.sort(function(a, b){
+      if (a.uid === user.uid) return -1;
+      if (b.uid === user.uid) return 1;
+      return a.label.localeCompare(b.label);
+    });
+    VIEW = entries;
+    if (current === 'dashboard' && !snap.metadata.hasPendingWrites) render('dashboard');
+  }, syncError);
 }
 function persistOwner(oi){
   var v = VIEW[oi];
@@ -492,8 +485,9 @@ function render(boardKey){
     (b.desc ? '<div class="desc">' + esc(b.desc) + '</div>' : '') + '</div>' +
     '<div class="board-tabs"><div class="btab on">Main table</div><div class="btab off">Kanban</div><div class="btab off">Calendar</div></div>' +
     '<div class="toolbar"><button class="tool-new" id="new-item">+ New item</button>' +
-    '<div class="tool">🔍 <input id="board-filter" placeholder="Filter items" aria-label="Filter items"></div>' +
-    '<div class="tool">👤 Person</div><div class="tool">⇅ Sort</div></div>';
+    '<div class="seg" id="view-seg">' +
+    '<button data-view="team" class="' + (VIEW_MODE === 'team' ? 'on' : '') + '">Team</button>' +
+    '<button data-view="me" class="' + (VIEW_MODE === 'me' ? 'on' : '') + '">My items</button></div></div>';
 
   if (!VIEW.length) {
     html += '<div class="soonboard"><b>Loading your board…</b>If this doesn’t load, check your connection.</div>';
@@ -502,8 +496,9 @@ function render(boardKey){
     return;
   }
   VIEW.forEach(function(v, oi){
-    if (IS_ADMIN && VIEW.length > 0) {
-      var lbl = v.label || 'Me';
+    if (VIEW_MODE === 'me' && v.uid !== ME_UID) return;
+    if (VIEW_MODE === 'team' && v.uid !== ME_UID) {
+      var lbl = v.label || ownerLabel(v.uid);
       html += '<div class="owner-head"><span class="pava" style="background:var(--lime)">' + esc(initialsOf(lbl)) + '</span> ' + esc(lbl) + '</div>';
     }
     v.groups.forEach(function(g, gi){
@@ -562,13 +557,13 @@ function wireBoard(){
       render(current);
     });
   });
-  var filter = document.getElementById('board-filter');
-  if (filter) filter.addEventListener('input', function(){
-    var q = filter.value.toLowerCase();
-    main.querySelectorAll('.grow.item').forEach(function(r){
-      r.style.display = r.getAttribute('data-name').indexOf(q) !== -1 ? '' : 'none';
+  main.querySelectorAll('#view-seg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      VIEW_MODE = b.getAttribute('data-view');
+      render(current);
     });
   });
+  applySearch();
   var newBtn = document.getElementById('new-item');
   if (newBtn) newBtn.addEventListener('click', function(){
     var firstAdd = main.querySelector('.addrow input');
@@ -662,10 +657,13 @@ document.getElementById('burger').addEventListener('click', function(e){
   e.stopPropagation();
   document.getElementById('sidebar').classList.toggle('open');
 });
-document.getElementById('global-search').addEventListener('input', function(){
-  var bf = document.getElementById('board-filter');
-  if (bf) { bf.value = this.value; bf.dispatchEvent(new Event('input')); }
-});
+function applySearch(){
+  var q = document.getElementById('global-search').value.toLowerCase();
+  main.querySelectorAll('.grow.item[data-name]').forEach(function(r){
+    r.style.display = r.getAttribute('data-name').indexOf(q) !== -1 ? '' : 'none';
+  });
+}
+document.getElementById('global-search').addEventListener('input', applySearch);
 
 render('dashboard');
 </script>

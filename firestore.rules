@@ -21,10 +21,11 @@ service cloud.firestore {
     match /users/{uid}/boards/{board} {
       allow read, write: if isAdmin() || (isStaff() && request.auth.uid == uid);
     }
-    // Collection-group read so the admin's consolidated dashboard can query
-    // every user's boards at once.
+    // Collection-group read so the Team dashboard view can query every
+    // user's boards at once. Any staff member may look; writes stay
+    // owner-or-admin via the match above.
     match /{path=**}/boards/{board} {
-      allow read: if isAdmin();
+      allow read: if isStaff();
     }
     // Username -> email mapping. Single-doc reads are open so the login
     // form can resolve a username before authentication; listing is blocked.
@@ -35,8 +36,11 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email;
       allow update, delete: if isAdmin() || (isStaff() && resource.data.uid == request.auth.uid);
     }
+    // Profiles are readable by all staff (the Team view shows owner names);
+    // each user still only writes their own.
     match /users/{uid} {
-      allow read, write: if isAdmin() || (isStaff() && request.auth.uid == uid);
+      allow read: if isStaff();
+      allow write: if isAdmin() || (isStaff() && request.auth.uid == uid);
     }
     match /{document=**} {
       allow read, write: if false;
