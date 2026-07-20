@@ -11,9 +11,14 @@ and MSMA Books — plus a new employee task-monitoring module into one app at
 
 ## Architecture
 
-- **Single file:** `index.html`. No build step, no framework, no external JS.
-  Inline CSS/JS, Google Fonts via CDN. This is the firm's standard architecture
-  across all tools.
+- **Landing page — single file:** `index.html`. No build step, no framework,
+  no external JS. Inline CSS/JS, Google Fonts via CDN.
+- **Workspace app — Next.js static export:** source in `workspace-app/`
+  (Next.js + TypeScript + React + Firebase Auth/Firestore). `npm run build`
+  inside `workspace-app/` type-checks, builds, and exports the static site
+  into `app/`, which Firebase Hosting serves at `msma.work/app`. No server —
+  the export is plain static files on the same hosting as the landing page.
+  Deploy: build first, then `firebase deploy --only hosting`.
 - **Supporting assets:** `404.html` (on-brand not-found page), `og-image.png`
   (1200×630 social share card, referenced by the Open Graph/Twitter meta tags).
   Cache and security headers live in `firebase.json`.

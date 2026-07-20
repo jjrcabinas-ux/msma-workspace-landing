@@ -11,7 +11,8 @@
       ".firebaserc",
       ".git/**",
       ".gitignore",
-      "README.md"
+      "README.md",
+      "workspace-app/**"
     ],
     "headers": [
       {
