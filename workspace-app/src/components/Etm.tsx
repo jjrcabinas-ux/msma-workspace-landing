@@ -85,8 +85,9 @@ export default function Etm({
     );
   }, [cluster]);
 
-  // Interns are visible from every cluster via the Intern tab (hidden when
-  // the Interns group itself is open).
+  // Interns assigned to this cluster (internOf) power the Intern tab —
+  // hidden when the Interns group itself is open. Interns with no
+  // assignment yet stay visible everywhere so nobody silently vanishes.
   useEffect(() => {
     setInternRoster([]);
     if (!cluster || cluster === 'INTERN') return;
@@ -94,7 +95,10 @@ export default function Etm({
       query(collection(db, 'members'), where('cluster', '==', 'INTERN')),
       (snap) => {
         const emails: string[] = [];
-        snap.forEach((d) => emails.push(d.id));
+        snap.forEach((d) => {
+          const io = ((d.data().internOf as string) || '').toUpperCase();
+          if (!io || io === cluster) emails.push(d.id);
+        });
         emails.sort();
         setInternRoster(emails);
       },
@@ -349,7 +353,7 @@ export default function Etm({
         {cluster !== 'INTERN' && (
           <div className={`btab${tab === 'interns' ? ' on' : ''}`} onClick={() => onTab('interns')}>Intern</div>
         )}
-        {(tab === 'mine' || tab === 'interns') && (
+        {tab === 'mine' && (
           <div className="etm-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -398,18 +402,25 @@ export default function Etm({
           )}
         </>
       )}
-      {tab === 'interns' && (
-        <>
-          <div style={{ height: 16 }} />
-          {internRoster.length ? (
-            internRoster.map((email, idx) => sheetFor(email, idx))
-          ) : (
+      {tab === 'interns' &&
+        (internRoster.length ? (
+          <EtmSummary
+            cluster={cluster}
+            roster={internRoster}
+            sheets={sheets}
+            usersMap={usersMap}
+            emailToUid={emailToUid}
+            internsView
+          />
+        ) : (
+          <>
+            <div style={{ height: 16 }} />
             <div className="soonboard">
-              <b>No interns yet</b>Add intern emails in the Members module and assign them to Interns.
+              <b>No interns assigned to this cluster yet</b>Add intern emails in the Members module (cluster: Interns)
+              and pick their assigned cluster.
             </div>
-          )}
-        </>
-      )}
+          </>
+        ))}
       {addFor && (
         <AddDeliverableModal
           onClose={() => setAddFor(null)}

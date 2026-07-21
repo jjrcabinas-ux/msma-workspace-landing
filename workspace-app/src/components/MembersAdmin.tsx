@@ -20,12 +20,17 @@ import { initialsOf } from '@/lib/ui';
 import ListModal from '@/components/ListModal';
 import Select from '@/components/Select';
 
-type MemberRow = { email: string; cluster: string; addedAt: Timestamp | null };
+type MemberRow = { email: string; cluster: string; internOf: string; addedAt: Timestamp | null };
+
+// Interns also belong to a home cluster — their sheets show up in that
+// cluster's Intern tab.
+const HOME_CLUSTERS = ['RPM', 'VCM', 'ADS'] as const;
 
 export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string, string> }) {
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [email, setEmail] = useState('');
   const [cluster, setCluster] = useState<string>(CLUSTERS[0]);
+  const [internOf, setInternOf] = useState<string>(HOME_CLUSTERS[0]);
   const [error, setError] = useState('');
   const [viewing, setViewing] = useState<{ email: string; cluster: string; profile: UserProfile } | null>(null);
 
@@ -44,7 +49,12 @@ export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string
         const list: MemberRow[] = [];
         snap.forEach((d) => {
           const m = d.data();
-          list.push({ email: d.id, cluster: (m.cluster as string) || '', addedAt: (m.addedAt as Timestamp) || null });
+          list.push({
+            email: d.id,
+            cluster: (m.cluster as string) || '',
+            internOf: (m.internOf as string) || '',
+            addedAt: (m.addedAt as Timestamp) || null,
+          });
         });
         list.sort((a, b) => a.email.localeCompare(b.email));
         setRows(list);
@@ -61,7 +71,12 @@ export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string
       return;
     }
     try {
-      await setDoc(doc(db, 'members', em), { email: em, cluster, addedAt: serverTimestamp() });
+      await setDoc(doc(db, 'members', em), {
+        email: em,
+        cluster,
+        internOf: cluster === 'INTERN' ? internOf : '',
+        addedAt: serverTimestamp(),
+      });
       setEmail('');
     } catch {
       setError('Couldn’t save right now — try again.');
@@ -91,6 +106,9 @@ export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string
           }}
         />
         <Select value={cluster} options={CLUSTERS} onChange={setCluster} ariaLabel="Cluster" />
+        {cluster === 'INTERN' && (
+          <Select value={internOf} options={HOME_CLUSTERS} onChange={setInternOf} ariaLabel="Intern assigned cluster" />
+        )}
         <button className="tool-new" onClick={addMember}>+ Add member</button>
       </div>
       {error && <div className="mem-error" role="alert">{error}</div>}
@@ -102,13 +120,21 @@ export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string
           rows.map((m) => (
             <div className="grow item" key={m.email}>
               <div><span className="name">{m.email}</span></div>
-              <div>
+              <div style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
                 <Select
                   value={m.cluster}
                   options={CLUSTERS}
                   ariaLabel={`Cluster for ${m.email}`}
                   onChange={(c) => updateDoc(doc(db, 'members', m.email), { cluster: c }).catch(() => {})}
                 />
+                {m.cluster === 'INTERN' && (
+                  <Select
+                    value={m.internOf}
+                    options={HOME_CLUSTERS}
+                    ariaLabel={`Assigned cluster for intern ${m.email}`}
+                    onChange={(c) => updateDoc(doc(db, 'members', m.email), { internOf: c }).catch(() => {})}
+                  />
+                )}
               </div>
               <div><span className="due">{m.addedAt ? m.addedAt.toDate().toLocaleDateString() : '—'}</span></div>
               <div>

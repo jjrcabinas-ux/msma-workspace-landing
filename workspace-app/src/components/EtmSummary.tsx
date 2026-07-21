@@ -29,12 +29,14 @@ export default function EtmSummary({
   sheets,
   usersMap,
   emailToUid,
+  internsView = false,
 }: {
   cluster: string;
   roster: string[];
   sheets: Record<string, SheetTask[]>;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
+  internsView?: boolean;
 }) {
   const [modal, setModal] = useState<{ title: string; body: React.ReactNode } | null>(null);
   const today = todayISO();
@@ -136,8 +138,8 @@ export default function EtmSummary({
   return (
     <>
       <div className="sum-date" style={{ margin: '14px 0 0' }}>
-        {MONFULL[now.getMonth()]} {now.getDate()}, {now.getFullYear()} — metrics across the {cluster}
-        {cluster === 'INTERN' ? ' group' : ' cluster'}
+        {MONFULL[now.getMonth()]} {now.getDate()}, {now.getFullYear()} — metrics across{' '}
+        {internsView ? `${cluster} interns` : `the ${cluster}${cluster === 'INTERN' ? ' group' : ' cluster'}`}
       </div>
 
       <div className="kpi-grid">
