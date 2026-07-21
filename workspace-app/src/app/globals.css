@@ -378,6 +378,15 @@ a{color:inherit;text-decoration:none}
 .legend-item{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--grey)}
 .legend-dot{width:9px;height:9px;border-radius:50%}
 .legend-value{font-weight:700;color:var(--white)}
+.dl-chart{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:120px;margin-top:6px}
+.dl-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;cursor:pointer;border-radius:8px;padding:4px 2px}
+.dl-col:hover{background:rgba(163,197,255,.06)}
+.dl-count{font-size:.72rem;font-weight:700;color:#fff}
+.dl-count.dl-zero{color:var(--dim)}
+.dl-bar{width:70%;border-radius:4px 4px 0 0}
+.dl-day{font-size:.6rem;color:var(--dim);font-weight:700;text-transform:uppercase;white-space:nowrap}
+.dl-over{margin-top:10px;font-size:.75rem;font-weight:600;color:var(--red);padding:5px 8px;border-radius:6px;text-align:left}
+.dl-over:hover{background:rgba(248,113,113,.1)}
 .workload-row{display:flex;align-items:center;gap:10px;padding:7px 0}
 .workload-name{width:110px;flex:none;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar-track{flex:1;height:9px;border-radius:5px;background:var(--card)}

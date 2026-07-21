@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
-import { MONFULL, daysBetween, fmtShort, todayISO } from '@/lib/dates';
+import { MONFULL, WEEKSHORT, addDaysIso, daysBetween, fmtShort, todayISO } from '@/lib/dates';
 import { empColor } from '@/lib/ui';
 import Pava from '@/components/Pava';
 import ListModal from '@/components/ListModal';
@@ -88,7 +88,6 @@ export default function EtmSummary({
 
   const total = flat.length;
   const pct = total ? Math.round((counts.Done / total) * 100) : 0;
-  const pctOf = (n: number) => (total ? (n / total) * 100 : 0);
 
   const badge = (s: SheetStatus) => (
     <span className="badge" style={{ background: STATUS_META[s].bg, color: STATUS_META[s].color }}>
@@ -125,11 +124,16 @@ export default function EtmSummary({
     </div>
   );
 
-  const legend = (color: string, label: string, n: number) => (
-    <div className="legend-item">
-      <span className="legend-dot" style={{ background: color }} /> {label} <span className="legend-value">{n}</span>
-    </div>
-  );
+  // Deadlines outlook: open tasks due on each of the next 7 days.
+  const next7 = Array.from({ length: 7 }, (_, i) => addDaysIso(today, i));
+  const duePer = next7.map((iso) => ({
+    iso,
+    rows: flat.filter((r) => r.t.due === iso && r.t.status !== 'Done'),
+  }));
+  const maxDue = Math.max(1, ...duePer.map((d) => d.rows.length));
+  const overdueRows = flat
+    .filter((r) => r.t.due && r.t.due < today && r.t.status !== 'Done')
+    .sort((a, b) => a.t.due.localeCompare(b.t.due));
 
   const lb = [...per].sort((a, b) => b.Done - a.Done);
   const maxN = Math.max(1, ...per.map((p) => p.n));
@@ -207,17 +211,53 @@ export default function EtmSummary({
 
       <div className="two-col">
         <div className="sum-card">
-          <div className="sum-section-title">Task Status — Whole Team</div>
-          <div className="stack-bar">
-            {counts.Done > 0 && <div style={{ width: `${pctOf(counts.Done)}%`, background: 'var(--lime)', boxShadow: '0 0 10px var(--lime)' }} />}
-            {counts.Ongoing > 0 && <div style={{ width: `${pctOf(counts.Ongoing)}%`, background: 'var(--blue)', boxShadow: '0 0 10px var(--blue)' }} />}
-            {counts.Pending > 0 && <div style={{ width: `${pctOf(counts.Pending)}%`, background: 'var(--amber)', boxShadow: '0 0 10px var(--amber)' }} />}
+          <div className="sum-section-title">Deadlines — Next 7 Days</div>
+          <div className="sum-sub" style={{ margin: '-6px 0 4px' }}>Open tasks due per day — click a day for the list</div>
+          <div className="dl-chart">
+            {duePer.map((d, i) => {
+              const [, , dayNum] = d.iso.split('-').map(Number);
+              const isToday = d.iso === today;
+              const color = isToday ? 'var(--red)' : 'var(--blue)';
+              return (
+                <button
+                  key={d.iso}
+                  className="dl-col"
+                  onClick={() =>
+                    setModal({
+                      title: `Due ${fmtShort(d.iso)} (${d.rows.length})`,
+                      body: d.rows.length
+                        ? d.rows.map((r, j) => taskRow(r, `dl${i}-${j}`))
+                        : <div className="empty-note">Nothing due this day.</div>,
+                    })
+                  }
+                >
+                  <span className={`dl-count${d.rows.length ? '' : ' dl-zero'}`}>{d.rows.length}</span>
+                  <span
+                    className="dl-bar"
+                    style={{
+                      height: `${Math.max(4, (d.rows.length / maxDue) * 100)}%`,
+                      background: d.rows.length ? color : 'var(--card)',
+                      boxShadow: d.rows.length ? `0 0 9px ${color}` : 'none',
+                    }}
+                  />
+                  <span className="dl-day">{isToday ? 'Today' : WEEKSHORT[new Date(d.iso).getDay()]} {dayNum}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="legend-row">
-            {legend('var(--lime)', 'Done', counts.Done)}
-            {legend('var(--blue)', 'Ongoing', counts.Ongoing)}
-            {legend('var(--amber)', 'Pending', counts.Pending)}
-          </div>
+          <button
+            className="dl-over"
+            onClick={() =>
+              setModal({
+                title: `Overdue (${overdueRows.length})`,
+                body: overdueRows.length
+                  ? overdueRows.map((r, j) => taskRow(r, `ov${j}`, `due ${fmtShort(r.t.due)}`))
+                  : <div className="empty-note">Nothing overdue. 🎉</div>,
+              })
+            }
+          >
+            {overdueRows.length ? `⚠ ${overdueRows.length} overdue — tap to review` : 'No overdue tasks 🎉'}
+          </button>
         </div>
         <div className="sum-card">
           <div className="sum-section-title">Workload — Tasks per Person</div>
