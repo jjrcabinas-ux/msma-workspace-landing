@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { POSITIONS } from '@/lib/types';
 import { initialsOf, resizePhotoToDataUrl } from '@/lib/ui';
+import Select from '@/components/Select';
 
 export default function ProfileModal({
   user,
@@ -108,13 +109,8 @@ export default function ProfileModal({
             <input id="prof-mobile" className="mem-input" type="tel" inputMode="tel" placeholder="0917 123 4567" value={mobile} onChange={(e) => setMobile(e.target.value)} />
           </div>
           <div className="prof-field full">
-            <label htmlFor="prof-pos">Position</label>
-            <select id="prof-pos" className="mem-input" value={position} onChange={(e) => setPosition(e.target.value)}>
-              <option value="">Select position…</option>
-              {POSITIONS.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
+            <label>Position</label>
+            <Select value={position} options={POSITIONS} onChange={setPosition} ariaLabel="Position" />
           </div>
         </div>
         {error && (
