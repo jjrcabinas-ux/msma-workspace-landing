@@ -187,7 +187,20 @@ export default function EtmSummary({
       <div className="sum-card" style={{ marginBottom: 14 }}>
         <div className="sum-section-title">Today’s Snapshot</div>
         <div className="sum-sub" style={{ margin: '-6px 0 10px' }}>Tasks dated today ({fmtShort(today)})</div>
-        {todayRows.length ? todayRows.map((r, i) => taskRow(r, `t${i}`)) : <div className="empty-note">No tasks dated today.</div>}
+        {todayRows.length ? todayRows.slice(0, 5).map((r, i) => taskRow(r, `t${i}`)) : <div className="empty-note">No tasks dated today.</div>}
+        {todayRows.length > 5 && (
+          <button
+            className="see-more"
+            onClick={() =>
+              setModal({
+                title: `Today’s Snapshot (${todayRows.length})`,
+                body: todayRows.map((r, i) => taskRow(r, `tm${i}`)),
+              })
+            }
+          >
+            View more — {todayRows.length - 5} more
+          </button>
+        )}
       </div>
 
       <div className="two-col">
