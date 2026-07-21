@@ -5,6 +5,8 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Client } from '@/lib/types';
 import { TAX_TYPES } from '@/lib/types';
+import { MONFULL, todayISO } from '@/lib/dates';
+import { REPORT_FIELDS, fieldValue, generateClientsPdf, generateClientsXlsx } from '@/lib/reportExport';
 import ClientModal from '@/components/ClientModal';
 import ListModal from '@/components/ListModal';
 import Select from '@/components/Select';
@@ -31,6 +33,20 @@ export default function ClientMasterlist({
   const [chan, setChan] = useState('All channels');
   const [editing, setEditing] = useState<Client | null | 'new'>(null);
   const [viewing, setViewing] = useState<Client | null>(null);
+  const [repOpen, setRepOpen] = useState(false);
+  const [repFields, setRepFields] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(REPORT_FIELDS.map((f) => [f.key, true]))
+  );
+  const [repPreview, setRepPreview] = useState(false);
+  const [repBusy, setRepBusy] = useState('');
+  const [repError, setRepError] = useState('');
+
+  useEffect(() => {
+    if (!repOpen) return;
+    const close = () => setRepOpen(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [repOpen]);
 
   useEffect(() => {
     setClients([]);
@@ -109,6 +125,41 @@ export default function ClientMasterlist({
         </div>
         <Select value={chan} options={CHANNEL_FILTERS} onChange={setChan} ariaLabel="Filter by channel" />
         {isAdmin && <Select value={adminCluster} options={HOME_CLUSTERS} onChange={setAdminCluster} ariaLabel="Cluster" />}
+        <div className="rep-wrap">
+          <button className="uname-skip" onClick={(e) => { e.stopPropagation(); setRepOpen((v) => !v); }}>
+            ⎙ Generate report
+          </button>
+          {repOpen && (
+            <div className="rep-pop" onClick={(e) => e.stopPropagation()}>
+              <div className="rep-title">Include in the report</div>
+              {REPORT_FIELDS.map((f) => (
+                <button
+                  key={f.key}
+                  className={`rep-opt${repFields[f.key] ? ' on' : ''}`}
+                  onClick={() => setRepFields((s) => ({ ...s, [f.key]: !s[f.key] }))}
+                >
+                  <span className="rep-check">✓</span>
+                  {f.label}
+                </button>
+              ))}
+              <div className="rep-note">
+                Covers the {filtered.length} client{filtered.length === 1 ? '' : 's'} currently shown (search and channel filters apply).
+              </div>
+              <button
+                className="tool-new"
+                style={{ width: '100%', marginTop: 10 }}
+                disabled={!filtered.length}
+                onClick={() => {
+                  setRepOpen(false);
+                  setRepError('');
+                  setRepPreview(true);
+                }}
+              >
+                Proceed
+              </button>
+            </div>
+          )}
+        </div>
         <button className="tool-new" onClick={() => setEditing('new')}>+ Add client</button>
       </div>
 
@@ -186,6 +237,103 @@ export default function ClientMasterlist({
       {editing && (
         <ClientModal cluster={cluster} initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
       )}
+
+      {repPreview && (() => {
+        const sel = REPORT_FIELDS.filter((f) => repFields[f.key]);
+        const t = todayISO().split('-').map(Number);
+        const asOf = `${MONFULL[t[1] - 1]} ${t[2]}, ${t[0]}`;
+        return (
+          <div
+            className="cal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !repBusy) setRepPreview(false);
+            }}
+          >
+            <div className="cal-modal dir-modal" role="dialog" aria-modal="true" aria-label="Client Masterlist report preview">
+              <div className="dir-head">
+                <div style={{ flex: 1 }}>
+                  <div className="dir-firm">Report preview</div>
+                  <div className="dir-subtitle">A4 · Client Masterlist — {cluster} Cluster · {filtered.length} client{filtered.length === 1 ? '' : 's'}</div>
+                </div>
+                <button className="cal-modal-close" aria-label="Close" onClick={() => setRepPreview(false)}>×</button>
+              </div>
+              <div className="cal-modal-body">
+                <div className="a4-paper">
+                  <div className="a4-head">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo.png" alt="MSMA logo" />
+                    <div>
+                      <div className="a4-firm">Mora Sanchez Meñoza &amp; Associates</div>
+                      <div className="a4-subtitle">Certified Public Accountants</div>
+                    </div>
+                  </div>
+                  <div className="a4-band">CLIENT MASTERLIST — {cluster} CLUSTER · AS OF {asOf.toUpperCase()}</div>
+                  <div className="a4-scroll">
+                    <table className="a4-table">
+                      <thead>
+                        <tr>
+                          <th>Client</th>
+                          {sel.map((f) => <th key={f.key}>{f.label}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((c) => (
+                          <tr key={c.id}>
+                            <td><b>{c.name}</b></td>
+                            {sel.map((f) => <td key={f.key}>{fieldValue(c, f.key)}</td>)}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="a4-foot">
+                    <span>Generated from the MSMA Workspace · {asOf}</span>
+                    <span>Page 1</span>
+                  </div>
+                </div>
+                {repError && <div className="mem-error" role="alert" style={{ marginTop: 12 }}>{repError}</div>}
+                <div className="rep-actions">
+                  <button className="uname-skip" disabled={!!repBusy} onClick={() => setRepPreview(false)}>Close</button>
+                  <button
+                    className="tool-new"
+                    disabled={!!repBusy}
+                    onClick={async () => {
+                      setRepError('');
+                      setRepBusy('pdf');
+                      try {
+                        await generateClientsPdf(cluster, sel, filtered);
+                      } catch {
+                        setRepError('Couldn’t generate the PDF — check your connection and try again.');
+                      } finally {
+                        setRepBusy('');
+                      }
+                    }}
+                  >
+                    {repBusy === 'pdf' ? 'Generating…' : '⬇ Generate PDF'}
+                  </button>
+                  <button
+                    className="tool-new"
+                    disabled={!!repBusy}
+                    onClick={async () => {
+                      setRepError('');
+                      setRepBusy('xlsx');
+                      try {
+                        await generateClientsXlsx(cluster, sel, filtered);
+                      } catch {
+                        setRepError('Couldn’t generate the Excel file — check your connection and try again.');
+                      } finally {
+                        setRepBusy('');
+                      }
+                    }}
+                  >
+                    {repBusy === 'xlsx' ? 'Generating…' : '⬇ Generate Excel File'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
