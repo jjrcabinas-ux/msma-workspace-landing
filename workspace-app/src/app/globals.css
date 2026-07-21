@@ -36,13 +36,17 @@ a{color:inherit;text-decoration:none}
 
 /* ---------- top bar ---------- */
 .topbar{
-  height:52px;display:flex;align-items:center;gap:14px;padding:0 14px;
+  position:relative;height:52px;display:flex;align-items:center;gap:14px;padding:0 14px;
   border-bottom:1px solid var(--line);background:var(--bg-soft);
 }
 .tb-brand{display:flex;align-items:flex-end;gap:8px;font-weight:700;font-size:.95rem;letter-spacing:-.02em;white-space:nowrap;line-height:1.05}
 .tb-brand img{height:24px;width:auto;display:block}
 .tb-search{
-  position:relative;flex:1;max-width:680px;margin:0 auto;display:flex;align-items:center;gap:8px;
+  /* Left edge sits at 276px = sidebar (250px) + main padding (26px),
+     flush with the board heading below it. */
+  position:absolute;left:276px;top:50%;transform:translateY(-50%);
+  width:clamp(220px,calc(100% - 276px - 110px),680px);
+  display:flex;align-items:center;gap:8px;
   background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--dim);
 }
 .tb-search input{flex:1;background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.85rem}
