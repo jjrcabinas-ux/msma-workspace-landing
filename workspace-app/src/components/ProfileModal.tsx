@@ -6,7 +6,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { POSITIONS } from '@/lib/types';
-import { initialsOf, resizePhotoToDataUrl } from '@/lib/ui';
+import { formatMobile, initialsOf, resizePhotoToDataUrl } from '@/lib/ui';
 import DatePicker from '@/components/DatePicker';
 import Select from '@/components/Select';
 
@@ -43,7 +43,7 @@ export default function ProfileModal({
       fullName: fullName.trim(),
       email: em,
       birthdate,
-      mobile: mobile.trim(),
+      mobile: formatMobile(mobile),
       position,
       profileComplete: true,
     };
@@ -109,7 +109,16 @@ export default function ProfileModal({
           </div>
           <div className="prof-field">
             <label htmlFor="prof-mobile">Mobile number</label>
-            <input id="prof-mobile" className="mem-input" type="tel" inputMode="tel" placeholder="0917 123 4567" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+            <input
+              id="prof-mobile"
+              className="mem-input"
+              type="tel"
+              inputMode="tel"
+              placeholder="0917 123 4567"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+              onBlur={(e) => setMobile(formatMobile(e.target.value))}
+            />
           </div>
           <div className="prof-field full">
             <label>Position</label>

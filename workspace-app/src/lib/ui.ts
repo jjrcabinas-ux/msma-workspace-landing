@@ -18,6 +18,16 @@ export function newTaskId(): string {
   return `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 }
 
+/** PH mobile format: 0977 326 4410. Accepts 09XXXXXXXXX or +639XXXXXXXXX;
+ *  anything else (landlines, foreign) is left as typed. */
+export function formatMobile(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  let d = digits;
+  if (d.length === 12 && d.startsWith('63')) d = `0${d.slice(2)}`;
+  if (d.length === 11 && d.startsWith('0')) return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}`;
+  return raw.trim();
+}
+
 // Photo approach ported from msma-task-monitor's AvatarUpload:
 // canvas cover-crop to a 200px square JPEG data URL.
 export function resizePhotoToDataUrl(file: File): Promise<string> {
