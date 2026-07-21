@@ -178,7 +178,7 @@ export default function DatePicker({
                 {MON.map((name, i) => (
                   <button
                     key={name}
-                    className={`dp-cell${sel && sel.y === y && sel.m0 === i ? ' sel' : now.getFullYear() === y && now.getMonth() === i ? ' today' : ''}`}
+                    className={`dp-cell${now.getFullYear() === y && now.getMonth() === i ? ' today' : ''}`}
                     onClick={() => {
                       setM(i);
                       zoomInTo('days');
@@ -203,7 +203,7 @@ export default function DatePicker({
                   return (
                     <button
                       key={yy}
-                      className={`dp-cell${sel && sel.y === yy ? ' sel' : now.getFullYear() === yy ? ' today' : ''}`}
+                      className={`dp-cell${now.getFullYear() === yy ? ' today' : ''}`}
                       onClick={() => {
                         setY(yy);
                         zoomInTo('months');

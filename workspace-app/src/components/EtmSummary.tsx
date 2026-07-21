@@ -18,7 +18,7 @@ const RING_C = 2 * Math.PI * 54;
 const STATUS_META: Record<SheetStatus, { color: string; bg: string }> = {
   Pending: { color: 'var(--amber)', bg: 'rgba(251,191,36,.15)' },
   Ongoing: { color: 'var(--blue)', bg: 'rgba(96,165,250,.15)' },
-  Done: { color: 'var(--lime)', bg: 'var(--lime-soft)' },
+  Done: { color: 'var(--white)', bg: 'var(--lime-soft)' },
 };
 
 const SNAPSHOT_ORDER: Record<SheetStatus, number> = { Done: 0, Ongoing: 1, Pending: 2 };
