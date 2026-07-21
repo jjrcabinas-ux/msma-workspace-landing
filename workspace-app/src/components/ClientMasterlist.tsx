@@ -125,7 +125,8 @@ export default function ClientMasterlist({
         </div>
         <Select value={chan} options={CHANNEL_FILTERS} onChange={setChan} ariaLabel="Filter by channel" />
         {isAdmin && <Select value={adminCluster} options={HOME_CLUSTERS} onChange={setAdminCluster} ariaLabel="Cluster" />}
-        <div className="rep-wrap">
+        <button className="tool-new" onClick={() => setEditing('new')}>+ Add client</button>
+        <div className="rep-wrap" style={{ marginLeft: 'auto' }}>
           <button className="uname-skip" onClick={(e) => { e.stopPropagation(); setRepOpen((v) => !v); }}>
             ⎙ Generate report
           </button>
@@ -160,7 +161,6 @@ export default function ClientMasterlist({
             </div>
           )}
         </div>
-        <button className="tool-new" onClick={() => setEditing('new')}>+ Add client</button>
       </div>
 
       <div className="cl-table">
