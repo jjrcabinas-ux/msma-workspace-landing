@@ -59,11 +59,12 @@ export default function Etm({
   myEmail: string;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
-  tab: 'summary' | 'mine' | 'calendar';
-  onTab: (t: 'summary' | 'mine' | 'calendar') => void;
+  tab: 'summary' | 'mine' | 'calendar' | 'interns';
+  onTab: (t: 'summary' | 'mine' | 'calendar' | 'interns') => void;
 }) {
   const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
+  const [internRoster, setInternRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
   const [addFor, setAddFor] = useState<string | null>(null); // email the add popup targets
   const [lockNotice, setLockNotice] = useState<string | null>(null); // task name whose status is locked
@@ -84,8 +85,26 @@ export default function Etm({
     );
   }, [cluster]);
 
+  // Interns are visible from every cluster via the Intern tab (hidden when
+  // the Interns group itself is open).
   useEffect(() => {
-    const unsubs = roster.map((email) =>
+    setInternRoster([]);
+    if (!cluster || cluster === 'INTERN') return;
+    return onSnapshot(
+      query(collection(db, 'members'), where('cluster', '==', 'INTERN')),
+      (snap) => {
+        const emails: string[] = [];
+        snap.forEach((d) => emails.push(d.id));
+        emails.sort();
+        setInternRoster(emails);
+      },
+      () => {}
+    );
+  }, [cluster]);
+
+  useEffect(() => {
+    const emails = Array.from(new Set([...roster, ...internRoster]));
+    const unsubs = emails.map((email) =>
       onSnapshot(
         collection(db, 'members', email, 'tasks'),
         (snap) => {
@@ -99,7 +118,8 @@ export default function Etm({
       )
     );
     return () => unsubs.forEach((u) => u());
-  }, [roster]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster, internRoster]);
 
   const canEdit = (email: string) => isAdmin || email === myEmail;
 
@@ -326,7 +346,10 @@ export default function Etm({
         <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => onTab('summary')}>Team Summary</div>
         <div className={`btab${tab === 'mine' ? ' on' : ''}`} onClick={() => onTab('mine')}>My Deliverables</div>
         <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => onTab('calendar')}>Calendar</div>
-        {tab === 'mine' && (
+        {cluster !== 'INTERN' && (
+          <div className={`btab${tab === 'interns' ? ' on' : ''}`} onClick={() => onTab('interns')}>Intern</div>
+        )}
+        {(tab === 'mine' || tab === 'interns') && (
           <div className="etm-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -371,6 +394,18 @@ export default function Etm({
             <div className="soonboard">
               <b>No sheet of yours here</b>Your account isn’t a member of the {cluster}
               {cluster === 'INTERN' ? ' group' : ' cluster'}, so you don’t have a deliverables sheet in it.
+            </div>
+          )}
+        </>
+      )}
+      {tab === 'interns' && (
+        <>
+          <div style={{ height: 16 }} />
+          {internRoster.length ? (
+            internRoster.map((email, idx) => sheetFor(email, idx))
+          ) : (
+            <div className="soonboard">
+              <b>No interns yet</b>Add intern emails in the Members module and assign them to Interns.
             </div>
           )}
         </>
