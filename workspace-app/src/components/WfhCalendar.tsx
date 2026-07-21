@@ -5,7 +5,7 @@ import { arrayRemove, arrayUnion, doc, onSnapshot, setDoc } from 'firebase/fires
 import { db } from '@/lib/firebase';
 import type { UsersMap } from '@/lib/types';
 import { MONFULL, WEEKSHORT, addDaysIso, firstWeekdayOfMonth, lastDayOfMonth, pad2, shiftMonth, todayISO } from '@/lib/dates';
-import { empColor, initialsOf } from '@/lib/ui';
+import { empColor } from '@/lib/ui';
 import Pava from '@/components/Pava';
 import ListModal from '@/components/ListModal';
 
@@ -129,7 +129,8 @@ export default function WfhCalendar({
             return (
               <div
                 key={iso}
-                className={`cal-day wfh${who.length ? ' marked' : ''}${iso === today ? ' today' : ''}`}
+                className={`cal-day wfh${who.length ? ' wfh-on' : ''}${iso === today ? ' today' : ''}`}
+                title={who.length ? `${who.length} WFH` : undefined}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(iso)}
@@ -141,21 +142,6 @@ export default function WfhCalendar({
                 }}
               >
                 {day}
-                {who.length > 0 && (
-                  <span className="wfh-avas">
-                    {who.slice(0, 2).map((email, j) => {
-                      const p = photoOf(email);
-                      return p ? (
-                        <span key={email} className="wfh-ava" style={{ backgroundImage: `url(${p})` }} />
-                      ) : (
-                        <span key={email} className="wfh-ava" style={{ background: empColor(j) }}>
-                          {initialsOf(labelOf(email))[0]}
-                        </span>
-                      );
-                    })}
-                    {who.length > 2 && <span className="wfh-more">+{who.length - 2}</span>}
-                  </span>
-                )}
               </div>
             );
           })}
