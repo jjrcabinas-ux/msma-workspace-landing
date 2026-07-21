@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
-import { MONFULL, WEEKSHORT, addDaysIso, daysBetween, fmtShort, todayISO } from '@/lib/dates';
+import { MONFULL, daysBetween, fmtShort, todayISO } from '@/lib/dates';
 import { empColor } from '@/lib/ui';
 import Pava from '@/components/Pava';
 import ListModal from '@/components/ListModal';
@@ -124,17 +124,6 @@ export default function EtmSummary({
     </div>
   );
 
-  // Deadlines outlook: open tasks due on each of the next 7 days.
-  const next7 = Array.from({ length: 7 }, (_, i) => addDaysIso(today, i));
-  const duePer = next7.map((iso) => ({
-    iso,
-    rows: flat.filter((r) => r.t.due === iso && r.t.status !== 'Done'),
-  }));
-  const maxDue = Math.max(1, ...duePer.map((d) => d.rows.length));
-  const overdueRows = flat
-    .filter((r) => r.t.due && r.t.due < today && r.t.status !== 'Done')
-    .sort((a, b) => a.t.due.localeCompare(b.t.due));
-
   const lb = [...per].sort((a, b) => b.Done - a.Done);
   const maxN = Math.max(1, ...per.map((p) => p.n));
   const maxD = Math.max(1, ...lb.map((p) => p.Done));
@@ -190,78 +179,24 @@ export default function EtmSummary({
         )}
       </div>
 
-      <div className="sum-card" style={{ marginBottom: 14 }}>
-        <div className="sum-section-title">Today’s Snapshot</div>
-        <div className="sum-sub" style={{ margin: '-6px 0 10px' }}>Tasks dated today ({fmtShort(today)})</div>
-        {todayRows.length ? todayRows.slice(0, 5).map((r, i) => taskRow(r, `t${i}`)) : <div className="empty-note">No tasks dated today.</div>}
-        {todayRows.length > 5 && (
-          <button
-            className="see-more"
-            onClick={() =>
-              setModal({
-                title: `Today’s Snapshot (${todayRows.length})`,
-                body: todayRows.map((r, i) => taskRow(r, `tm${i}`)),
-              })
-            }
-          >
-            View more — {todayRows.length - 5} more
-          </button>
-        )}
-      </div>
-
       <div className="two-col">
         <div className="sum-card">
-          <div className="sum-section-title">Deadlines — Next 7 Days</div>
-          <div className="sum-sub" style={{ margin: '-6px 0 4px' }}>Open tasks due per day — click a day for the list</div>
-          <div className="dl-chart">
-            {duePer.map((d, i) => {
-              const [, , dayNum] = d.iso.split('-').map(Number);
-              const isToday = d.iso === today;
-              const color = isToday ? 'var(--red)' : 'var(--blue)';
-              return (
-                <button
-                  key={d.iso}
-                  className="dl-col"
-                  onClick={() =>
-                    setModal({
-                      title: `Due ${fmtShort(d.iso)} (${d.rows.length})`,
-                      body: d.rows.length
-                        ? d.rows.map((r, j) => taskRow(r, `dl${i}-${j}`))
-                        : <div className="empty-note">Nothing due this day.</div>,
-                    })
-                  }
-                >
-                  <span className={`dl-count${d.rows.length ? '' : ' dl-zero'}`}>{d.rows.length}</span>
-                  <span className="dl-bar-zone">
-                    {d.rows.length > 0 && (
-                      <span
-                        className="dl-bar"
-                        style={{
-                          height: `${Math.max(16, (d.rows.length / maxDue) * 100)}%`,
-                          background: `linear-gradient(180deg, ${color} 0%, ${color} 60%, rgba(0,0,0,.25) 160%), ${color}`,
-                          boxShadow: `0 6px 18px -6px ${color}`,
-                        }}
-                      />
-                    )}
-                  </span>
-                  <span className="dl-day">{isToday ? 'Today' : WEEKSHORT[new Date(d.iso).getDay()]} {dayNum}</span>
-                </button>
-              );
-            })}
-          </div>
-          <button
-            className={`dl-over${overdueRows.length ? '' : ' ok'}`}
-            onClick={() =>
-              setModal({
-                title: `Overdue (${overdueRows.length})`,
-                body: overdueRows.length
-                  ? overdueRows.map((r, j) => taskRow(r, `ov${j}`, `due ${fmtShort(r.t.due)}`))
-                  : <div className="empty-note">Nothing overdue. 🎉</div>,
-              })
-            }
-          >
-            {overdueRows.length ? `⚠ ${overdueRows.length} overdue — tap to review` : 'No overdue tasks 🎉'}
-          </button>
+          <div className="sum-section-title">Today’s Snapshot</div>
+          <div className="sum-sub" style={{ margin: '-6px 0 10px' }}>Tasks dated today ({fmtShort(today)})</div>
+          {todayRows.length ? todayRows.slice(0, 5).map((r, i) => taskRow(r, `t${i}`)) : <div className="empty-note">No tasks dated today.</div>}
+          {todayRows.length > 5 && (
+            <button
+              className="see-more"
+              onClick={() =>
+                setModal({
+                  title: `Today’s Snapshot (${todayRows.length})`,
+                  body: todayRows.map((r, i) => taskRow(r, `tm${i}`)),
+                })
+              }
+            >
+              View more — {todayRows.length - 5} more
+            </button>
+          )}
         </div>
         <div className="sum-card">
           <div className="sum-section-title">Workload — Tasks per Person</div>
