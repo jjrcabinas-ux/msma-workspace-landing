@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, isAdminEmail } from '@/lib/firebase';
@@ -62,6 +62,10 @@ export default function Shell({ user }: { user: User }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Keep the URL hash in sync so refresh (and bookmarks) restore this spot.
+  // In-app moves PUSH history entries so the browser Back button walks back
+  // through boards/tabs before ever leaving to the landing page; the very
+  // first sync replaces so there's no phantom extra entry.
+  const hashInit = useRef(false);
   useEffect(() => {
     const parts: string[] = [board];
     if (board === 'tasks') {
@@ -69,8 +73,29 @@ export default function Shell({ user }: { user: User }) {
       if (etmTab !== 'summary') parts.push(etmTab);
     }
     const h = `#${parts.join('/')}`;
-    if (window.location.hash !== h) window.history.replaceState(null, '', h);
+    if (window.location.hash === h) {
+      hashInit.current = true;
+      return;
+    }
+    if (!hashInit.current) {
+      hashInit.current = true;
+      window.history.replaceState(null, '', h);
+    } else {
+      window.history.pushState(null, '', h);
+    }
   }, [board, etmCluster, etmTab, isAdmin]);
+
+  // Back/Forward: restore state from the hash the browser navigated to.
+  useEffect(() => {
+    const onPop = () => {
+      const p = parseHash(window.location.hash);
+      setBoard(p.board);
+      setEtmCluster(p.cluster);
+      setEtmTab(p.tab);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   const [profile, setProfile] = useState<UserProfile>({});
   const [showUname, setShowUname] = useState(false);
