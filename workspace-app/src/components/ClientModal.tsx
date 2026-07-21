@@ -108,6 +108,17 @@ export default function ClientModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
+      {corBusy && (
+        <div className="scan-overlay" role="status" aria-live="polite">
+          <div className="scan-card">
+            <div className="scan-doc">
+              <span className="scan-beam" />
+            </div>
+            <div className="scan-title">Scanning COR…</div>
+            <div className="scan-status">{corStatus}</div>
+          </div>
+        </div>
+      )}
       <div className="uname-card client-card" role="dialog" aria-modal="true" aria-labelledby="cl-title">
         <h3 id="cl-title">{initial ? 'Edit client' : 'Add client'}</h3>
         <div className="cor-note">
