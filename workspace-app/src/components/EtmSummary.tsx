@@ -221,7 +221,7 @@ export default function EtmSummary({
         </div>
         <div className="sum-card">
           <div className="sum-section-title">Workload — Tasks per Person</div>
-          {per.map((p) => (
+          {[...per].sort((a, b) => b.n - a.n).map((p) => (
             <div className="workload-row" key={p.email}>
               <span className="workload-name">{p.label}</span>
               <div className="bar-track"><div className="bar-fill" style={{ width: `${(p.n / maxN) * 100}%` }} /></div>
