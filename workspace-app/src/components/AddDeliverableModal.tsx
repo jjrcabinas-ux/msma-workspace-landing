@@ -4,15 +4,27 @@ import { useState } from 'react';
 import type { SheetTask } from '@/lib/types';
 import { todayISO } from '@/lib/dates';
 import DatePicker from '@/components/DatePicker';
+import Select from '@/components/Select';
 
-/** Popup form for adding a deliverable, mirroring the task-monitor add modal. */
+export type AddAssignee = { email: string; label: string };
+
+/** Popup form for adding a deliverable, mirroring the task-monitor add
+ *  modal. When `assignees` has more than one entry (admin or a Senior
+ *  Associate of the cluster), a For selector picks whose sheet gets it. */
 export default function AddDeliverableModal({
   onClose,
   onAdd,
+  assignees,
+  defaultAssignee,
 }: {
   onClose: () => void;
-  onAdd: (t: Omit<SheetTask, 'id'>) => void;
+  onAdd: (t: Omit<SheetTask, 'id'>, email: string) => void;
+  assignees?: AddAssignee[];
+  defaultAssignee: string;
 }) {
+  const [forEmail, setForEmail] = useState(defaultAssignee);
+  const canPick = (assignees?.length || 0) > 1;
+  const labelOf = (email: string) => assignees?.find((a) => a.email === email)?.label || email;
   const [date, setDate] = useState(todayISO());
   const [due, setDue] = useState('');
   const [task, setTask] = useState('');
@@ -40,6 +52,11 @@ export default function AddDeliverableModal({
       >
         <div className="uname-card" role="dialog" aria-modal="true" aria-labelledby="addt-remind">
           <h3 id="addt-remind">One reminder before saving</h3>
+          {canPick && (
+            <p style={{ marginBottom: 8 }}>
+              Adding for: <b style={{ color: 'var(--white)' }}>{labelOf(forEmail)}</b>
+            </p>
+          )}
           <p>
             Once saved, only <b style={{ color: 'var(--white)' }}>Status</b> and{' '}
             <b style={{ color: 'var(--white)' }}>Help needed</b> stay editable — the task, dates, and details are
@@ -52,7 +69,10 @@ export default function AddDeliverableModal({
             <button
               className="tool-new"
               onClick={() =>
-                onAdd({ date, due, task: task.trim(), details: details.trim(), status: 'Pending', help: help.trim() })
+                onAdd(
+                  { date, due, task: task.trim(), details: details.trim(), status: 'Pending', help: help.trim() },
+                  forEmail
+                )
               }
             >
               I understand — add it
@@ -75,6 +95,20 @@ export default function AddDeliverableModal({
         <h3 id="addt-title">Add deliverable</h3>
         <p>It starts as Pending — cycle the status from the sheet as it moves.</p>
         <div className="prof-grid">
+          {canPick && (
+            <div className="prof-field full">
+              <label>For</label>
+              <Select
+                value={labelOf(forEmail)}
+                options={assignees!.map((a) => a.label)}
+                ariaLabel="Add for member"
+                onChange={(label) => {
+                  const hit = assignees!.find((a) => a.label === label);
+                  if (hit) setForEmail(hit.email);
+                }}
+              />
+            </div>
+          )}
           <div className="prof-field full">
             <label htmlFor="addt-task">Task</label>
             <input

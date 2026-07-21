@@ -46,9 +46,17 @@ service cloud.firestore {
     // once the overdue lock engages). Deletion and corrections are the
     // admin's (direct supervisor's) alone, so delete-and-recreate can't
     // dodge the immutability.
+    // Senior Associates may create deliverables for members of their own
+    // cluster (position comes from the profile; cluster from the registry).
+    function isSeniorAssocOfSameCluster(email) {
+      return isStaff()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('position', '') == 'Senior Associate'
+        && get(/databases/$(database)/documents/members/$(request.auth.token.email.lower())).data.get('cluster', '') ==
+           get(/databases/$(database)/documents/members/$(email)).data.get('cluster', 'none');
+    }
     match /members/{email}/tasks/{taskId} {
       allow read: if isStaff();
-      allow create: if (isAdmin() || isTaskOwner(email)) && validTask();
+      allow create: if (isAdmin() || isTaskOwner(email) || isSeniorAssocOfSameCluster(email)) && validTask();
       allow update: if isAdmin() || (
         isTaskOwner(email)
         && !lockedTask()

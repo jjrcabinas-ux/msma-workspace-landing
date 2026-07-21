@@ -189,8 +189,16 @@ export default function Etm({
     return (uid && usersMap[uid]?.label) || email.split('@')[0];
   };
 
+  // Senior Associates (and the admin) can add deliverables for anyone in
+  // the cluster; the rules verify the position and cluster server-side.
+  const myUid = emailToUid[myEmail];
+  const canAssignOthers = isAdmin || (myUid && usersMap[myUid]?.position === 'Senior Associate');
+  const addAssignees = canAssignOthers
+    ? roster.map((email) => ({ email, label: email === myEmail ? `${labelOf(email)} (me)` : labelOf(email) }))
+    : undefined;
+
   function addTask(email: string) {
-    if (!canEdit(email)) return;
+    if (!canEdit(email) && !canAssignOthers) return;
     setAddFor(email);
   }
 
@@ -423,10 +431,13 @@ export default function Etm({
         ))}
       {addFor && (
         <AddDeliverableModal
+          assignees={addAssignees}
+          defaultAssignee={addFor}
           onClose={() => setAddFor(null)}
-          onAdd={(t) => {
-            createTask(addFor, t);
+          onAdd={(t, email) => {
+            createTask(email, t);
             setAddFor(null);
+            if (email !== myEmail) onTab('summary');
           }}
         />
       )}
