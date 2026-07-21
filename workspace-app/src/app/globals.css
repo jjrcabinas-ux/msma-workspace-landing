@@ -320,7 +320,13 @@ a{color:inherit;text-decoration:none}
 }
 .etm-row:last-child{border-bottom:none}
 .etm-row>div{padding:8px 10px;display:flex;align-items:center;min-width:0}
-.etm-row.head{background:rgba(255,255,255,.02);color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.etm-row.head{position:relative;background:rgba(255,255,255,.02);color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.etm-add-btn{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  background:var(--lime);color:#0A1628;font-weight:700;font-size:.68rem;
+  border-radius:6px;padding:4px 10px;text-transform:none;letter-spacing:0;white-space:nowrap;
+}
+.etm-add-btn:hover{filter:brightness(1.06)}
 .etm-input{width:100%;background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.8rem}
 .etm-input:disabled{color:var(--grey)}
 .etm-input[type="date"]{color-scheme:dark}

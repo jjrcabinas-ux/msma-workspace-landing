@@ -8,6 +8,7 @@ import { todayISO } from '@/lib/dates';
 import { empColor, newTaskId } from '@/lib/ui';
 import type { BirFiling } from '@/lib/birCalendar';
 import Pava from '@/components/Pava';
+import AddDeliverableModal from '@/components/AddDeliverableModal';
 import DatePicker from '@/components/DatePicker';
 import EtmCalendar from '@/components/EtmCalendar';
 import EtmProfile from '@/components/EtmProfile';
@@ -41,6 +42,7 @@ export default function Etm({
   const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
+  const [addFor, setAddFor] = useState<string | null>(null); // email the add popup targets
 
   useEffect(() => {
     setRoster([]);
@@ -93,10 +95,8 @@ export default function Etm({
   };
 
   function addTask(email: string) {
-    persist(email, [
-      ...(sheets[email] || []),
-      { id: newTaskId(), date: todayISO(), task: '', details: '', due: '', status: 'Pending', help: '' },
-    ]);
+    if (!canEdit(email)) return;
+    setAddFor(email);
   }
 
   const rankOf = (email: string) => {
@@ -184,7 +184,12 @@ export default function Etm({
         )}
         <div className="etm-table">
           <div className="etm-row head">
-            <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div><div />
+            <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div>
+            <div>
+              {editable && (
+                <button className="etm-add-btn" onClick={() => addTask(email)}>＋ Add Task</button>
+              )}
+            </div>
           </div>
           {visible.map(({ t, i }) => (
             <div
@@ -231,11 +236,6 @@ export default function Etm({
               </div>
             </div>
           ))}
-          {editable && (
-            <div className="etm-add" onClick={() => addTask(email)}>
-              ＋ Add task…
-            </div>
-          )}
         </div>
       </div>
     );
@@ -296,6 +296,15 @@ export default function Etm({
             </div>
           )}
         </>
+      )}
+      {addFor && (
+        <AddDeliverableModal
+          onClose={() => setAddFor(null)}
+          onAdd={(t) => {
+            persist(addFor, [...(sheets[addFor] || []), { id: newTaskId(), ...t }]);
+            setAddFor(null);
+          }}
+        />
       )}
     </>
   );
