@@ -75,7 +75,6 @@ export default function Sidebar({
       {item('audit', 'Audit')}
       {item('clients', 'Client Masterlist')}
       {isAdmin && item('members', 'Members')}
-      <div className="sb-foot">{item('settings', '⚙ Settings')}</div>
     </nav>
   );
 }
