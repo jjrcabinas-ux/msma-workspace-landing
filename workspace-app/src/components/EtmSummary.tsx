@@ -232,21 +232,25 @@ export default function EtmSummary({
                   }
                 >
                   <span className={`dl-count${d.rows.length ? '' : ' dl-zero'}`}>{d.rows.length}</span>
-                  <span
-                    className="dl-bar"
-                    style={{
-                      height: `${Math.max(4, (d.rows.length / maxDue) * 100)}%`,
-                      background: d.rows.length ? color : 'var(--card)',
-                      boxShadow: d.rows.length ? `0 0 9px ${color}` : 'none',
-                    }}
-                  />
+                  <span className="dl-bar-zone">
+                    {d.rows.length > 0 && (
+                      <span
+                        className="dl-bar"
+                        style={{
+                          height: `${Math.max(16, (d.rows.length / maxDue) * 100)}%`,
+                          background: `linear-gradient(180deg, ${color} 0%, ${color} 60%, rgba(0,0,0,.25) 160%), ${color}`,
+                          boxShadow: `0 6px 18px -6px ${color}`,
+                        }}
+                      />
+                    )}
+                  </span>
                   <span className="dl-day">{isToday ? 'Today' : WEEKSHORT[new Date(d.iso).getDay()]} {dayNum}</span>
                 </button>
               );
             })}
           </div>
           <button
-            className="dl-over"
+            className={`dl-over${overdueRows.length ? '' : ' ok'}`}
             onClick={() =>
               setModal({
                 title: `Overdue (${overdueRows.length})`,
