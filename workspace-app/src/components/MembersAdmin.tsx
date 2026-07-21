@@ -33,6 +33,7 @@ export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string
   const [internOf, setInternOf] = useState<string>(HOME_CLUSTERS[0]);
   const [error, setError] = useState('');
   const [viewing, setViewing] = useState<{ email: string; cluster: string; profile: UserProfile } | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   function viewProfile(m: MemberRow) {
     const uid = emailToUid[m.email];
@@ -112,57 +113,90 @@ export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string
         <button className="tool-new" onClick={addMember}>+ Add member</button>
       </div>
       {error && <div className="mem-error" role="alert">{error}</div>}
-      <div className="gtable" style={{ ['--gcolor' as never]: 'var(--lime)' }}>
-        <div className="grow head">
-          <div>Email</div><div>Cluster</div><div>Added</div><div />
-        </div>
-        {rows.length ? (
-          rows.map((m) => (
-            <div className="grow item" key={m.email}>
-              <div><span className="name">{m.email}</span></div>
-              <div style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+      {(() => {
+        const memberRow = (m: MemberRow) => (
+          <div className="grow item" key={m.email}>
+            <div><span className="name">{m.email}</span></div>
+            <div style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+              <Select
+                value={m.cluster}
+                options={CLUSTERS}
+                ariaLabel={`Cluster for ${m.email}`}
+                onChange={(c) => updateDoc(doc(db, 'members', m.email), { cluster: c }).catch(() => {})}
+              />
+              {m.cluster === 'INTERN' && (
                 <Select
-                  value={m.cluster}
-                  options={CLUSTERS}
-                  ariaLabel={`Cluster for ${m.email}`}
-                  onChange={(c) => updateDoc(doc(db, 'members', m.email), { cluster: c }).catch(() => {})}
+                  value={m.internOf}
+                  options={HOME_CLUSTERS}
+                  ariaLabel={`Assigned cluster for intern ${m.email}`}
+                  onChange={(c) => updateDoc(doc(db, 'members', m.email), { internOf: c }).catch(() => {})}
                 />
-                {m.cluster === 'INTERN' && (
-                  <Select
-                    value={m.internOf}
-                    options={HOME_CLUSTERS}
-                    ariaLabel={`Assigned cluster for intern ${m.email}`}
-                    onChange={(c) => updateDoc(doc(db, 'members', m.email), { internOf: c }).catch(() => {})}
-                  />
-                )}
-              </div>
-              <div><span className="due">{m.addedAt ? m.addedAt.toDate().toLocaleDateString() : '—'}</span></div>
-              <div>
-                {emailToUid[m.email] ? (
-                  <button className="mem-view" onClick={() => viewProfile(m)}>View profile</button>
-                ) : (
-                  <span className="mem-pending" title="No workspace account yet">Not registered</span>
-                )}
-                <button
-                  className="mem-del"
-                  onClick={() => {
-                    if (confirm(`Remove ${m.email}? They will lose workspace access.`)) {
-                      deleteDoc(doc(db, 'members', m.email)).catch(() => {});
-                    }
-                  }}
-                >
-                  Remove
-                </button>
+              )}
+            </div>
+            <div><span className="due">{m.addedAt ? m.addedAt.toDate().toLocaleDateString() : '—'}</span></div>
+            <div>
+              {emailToUid[m.email] ? (
+                <button className="mem-view" onClick={() => viewProfile(m)}>View profile</button>
+              ) : (
+                <span className="mem-pending" title="No workspace account yet">Not registered</span>
+              )}
+              <button
+                className="mem-del"
+                onClick={() => {
+                  if (confirm(`Remove ${m.email}? They will lose workspace access.`)) {
+                    deleteDoc(doc(db, 'members', m.email)).catch(() => {});
+                  }
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        );
+        const known = [...CLUSTERS] as string[];
+        const groups = [
+          ...known.map((c) => ({ key: c, label: c === 'INTERN' ? 'Interns' : `${c} Cluster`, rows: rows.filter((r) => r.cluster === c) })),
+          { key: 'OTHER', label: 'Unassigned', rows: rows.filter((r) => !known.includes(r.cluster)) },
+        ].filter((g) => g.key !== 'OTHER' || g.rows.length > 0);
+        if (!rows.length) {
+          return (
+            <div className="empty-note">No members yet — add the first staff email above.</div>
+          );
+        }
+        return groups.map((g) => {
+          const isClosed = !!collapsed[g.key];
+          return (
+            <div className={`mem-group${isClosed ? ' closed' : ''}`} key={g.key}>
+              <button
+                className="mem-group-head"
+                aria-expanded={!isClosed}
+                onClick={() => setCollapsed((s) => ({ ...s, [g.key]: !s[g.key] }))}
+              >
+                <span className="mem-caret">▼</span>
+                {g.label}
+                <span className="mem-group-count">— {g.rows.length} member{g.rows.length === 1 ? '' : 's'}</span>
+              </button>
+              <div className="mem-group-body">
+                <div>
+                  <div className="gtable" style={{ ['--gcolor' as never]: 'var(--lime)' }}>
+                    <div className="grow head">
+                      <div>Email</div><div>Cluster</div><div>Added</div><div />
+                    </div>
+                    {g.rows.length ? (
+                      g.rows.map(memberRow)
+                    ) : (
+                      <div className="grow item">
+                        <div><span className="name" style={{ color: 'var(--dim)' }}>No members in this cluster yet.</span></div>
+                        <div /><div /><div />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="grow item">
-            <div><span className="name" style={{ color: 'var(--dim)' }}>No members yet — add the first staff email above.</span></div>
-            <div /><div /><div />
-          </div>
-        )}
-      </div>
+          );
+        });
+      })()}
 
       {viewing && (
         <ListModal title="Member profile" onClose={() => setViewing(null)}>
