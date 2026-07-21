@@ -342,13 +342,15 @@ a{color:inherit;text-decoration:none}
 .cal-filing-body{flex:1;min-width:0}
 .cal-label{font-size:.8rem;font-weight:600;line-height:1.35;color:#fff}
 .cal-period{font-size:.72rem;color:var(--dim);margin-top:3px}
-.cal-duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px;align-items:start;max-width:1320px}
-.cal-duo .cal-card{max-width:none}
-.cal-day.wfh{cursor:pointer}
-.cal-day.wfh:hover{background:rgba(163,197,255,.10)}
-.cal-day.wfh-on{background:rgba(96,165,250,.20);color:var(--white)}
-.cal-day.wfh-on:hover{background:rgba(96,165,250,.30)}
-@media(max-width:920px){.cal-duo{grid-template-columns:1fr}}
+.cal-pick{display:flex;align-items:center;gap:12px;margin-top:16px}
+.cal-pick-label{font-size:.78rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.cal-single .cal-card{max-width:860px}
+.cal-day.sch{cursor:pointer}
+.cal-day.sch:hover{background:rgba(163,197,255,.10)}
+.cal-day.sch-on-blue{background:rgba(96,165,250,.20);color:var(--white)}
+.cal-day.sch-on-blue:hover{background:rgba(96,165,250,.30)}
+.cal-day.sch-on-amber{background:rgba(251,191,36,.22);color:var(--white)}
+.cal-day.sch-on-amber:hover{background:rgba(251,191,36,.32)}
 .cal-overlay{position:fixed;inset:0;background:rgba(4,7,13,.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:24px}
 .cal-modal{background:var(--card);border:1px solid var(--line-strong);border-radius:14px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.55);transform-origin:top center;animation:drop-open .2s ease}
 .cal-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);flex:none}

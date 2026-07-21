@@ -9,20 +9,34 @@ import { empColor } from '@/lib/ui';
 import Pava from '@/components/Pava';
 import ListModal from '@/components/ListModal';
 
-// Twin card beside the BIR calendar: the cluster's work-from-home
-// schedule. Members mark their own WFH days by clicking a date; everyone
-// sees who's home on which day.
+// Generic member-schedule calendar (used for Work From Home and for
+// Fieldwork and Meetings): members mark their own dates by clicking a
+// day; everyone sees who's marked on which day.
 
-function wfhDoc(email: string) {
-  return doc(db, 'members', email, 'wfh', 'main');
-}
-
-export default function WfhCalendar({
+export default function ScheduleCalendar({
+  docKey,
+  title,
+  hint,
+  accent,
+  todayTitle,
+  tomorrowTitle,
+  emptyDay,
+  addLabel,
+  removeLabel,
   roster,
   myEmail,
   usersMap,
   emailToUid,
 }: {
+  docKey: string; // subcollection name, e.g. 'wfh' | 'fieldwork'
+  title: string;
+  hint: string;
+  accent: 'blue' | 'amber';
+  todayTitle: string;
+  tomorrowTitle: string;
+  emptyDay: string;
+  addLabel: string;
+  removeLabel: string;
   roster: string[];
   myEmail: string;
   usersMap: UsersMap;
@@ -33,21 +47,25 @@ export default function WfhCalendar({
   const [year, setYear] = useState(ty);
   const [month, setMonth] = useState(tm - 1);
   const [selected, setSelected] = useState<string | null>(null);
-  const [wfh, setWfh] = useState<Record<string, string[]>>({});
+  const [marks, setMarks] = useState<Record<string, string[]>>({});
+
+  const ref = (email: string) => doc(db, 'members', email, docKey, 'main');
 
   useEffect(() => {
+    setMarks({});
     const unsubs = roster.map((email) =>
       onSnapshot(
-        wfhDoc(email),
+        ref(email),
         (snap) => {
           if (snap.metadata.hasPendingWrites) return;
-          setWfh((s) => ({ ...s, [email]: (snap.exists() && (snap.data().dates as string[])) || [] }));
+          setMarks((s) => ({ ...s, [email]: (snap.exists() && (snap.data().dates as string[])) || [] }));
         },
         () => {}
       )
     );
     return () => unsubs.forEach((u) => u());
-  }, [roster]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster, docKey]);
 
   const labelOf = (email: string) => {
     const uid = emailToUid[email];
@@ -58,18 +76,18 @@ export default function WfhCalendar({
     return uid ? usersMap[uid]?.photo : null;
   };
 
-  const whoOn = (iso: string) => roster.filter((email) => (wfh[email] || []).includes(iso));
+  const whoOn = (iso: string) => roster.filter((email) => (marks[email] || []).includes(iso));
   const inRoster = roster.includes(myEmail);
-  const mineOn = (iso: string) => (wfh[myEmail] || []).includes(iso);
+  const mineOn = (iso: string) => (marks[myEmail] || []).includes(iso);
 
   function toggleMine(iso: string) {
     if (!inRoster) return;
     const on = mineOn(iso);
-    setWfh((s) => ({
+    setMarks((s) => ({
       ...s,
       [myEmail]: on ? (s[myEmail] || []).filter((d) => d !== iso) : [...(s[myEmail] || []), iso],
     }));
-    setDoc(wfhDoc(myEmail), { dates: on ? arrayRemove(iso) : arrayUnion(iso) }, { merge: true }).catch(() => {});
+    setDoc(ref(myEmail), { dates: on ? arrayRemove(iso) : arrayUnion(iso) }, { merge: true }).catch(() => {});
   }
 
   function step(delta: number) {
@@ -91,15 +109,15 @@ export default function WfhCalendar({
     </div>
   );
 
-  const daySection = (title: string, iso: string, empty: string) => {
+  const daySection = (secTitle: string, iso: string) => {
     const who = whoOn(iso);
     return (
       <div className="due-wrap">
         <div className="due-head">
-          {title}
+          {secTitle}
           {who.length > 0 && <span className="due-count">{who.length}</span>}
         </div>
-        {who.length ? who.map(personRow) : <div className="empty-note">{empty}</div>}
+        {who.length ? who.map(personRow) : <div className="empty-note">{emptyDay}</div>}
       </div>
     );
   };
@@ -108,7 +126,7 @@ export default function WfhCalendar({
     <>
       <div className="cal-card">
         <div className="cal-sub">
-          <b style={{ color: 'var(--white)' }}>Work From Home Schedule</b> — click a date to see who’s home{inRoster ? ' or mark your own' : ''}
+          <b style={{ color: 'var(--white)' }}>{title}</b> — {hint}
         </div>
         <div className="cal-header">
           <button className="cal-nav" aria-label="Previous month" onClick={() => step(-1)}>‹</button>
@@ -131,8 +149,8 @@ export default function WfhCalendar({
             return (
               <div
                 key={iso}
-                className={`cal-day wfh${who.length ? ' wfh-on' : ''}${iso === today ? ' today' : ''}`}
-                title={who.length ? `${who.length} WFH` : undefined}
+                className={`cal-day sch${who.length ? ` sch-on-${accent}` : ''}${iso === today ? ' today' : ''}`}
+                title={who.length ? `${who.length} marked` : undefined}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(iso)}
@@ -148,23 +166,23 @@ export default function WfhCalendar({
             );
           })}
         </div>
-        {daySection('WFH Today', today, 'Everyone’s on site today.')}
-        {daySection('WFH Tomorrow', addDaysIso(today, 1), 'Everyone’s on site tomorrow.')}
+        {daySection(todayTitle, today)}
+        {daySection(tomorrowTitle, addDaysIso(today, 1))}
       </div>
 
       {selected && (
         <ListModal
-          title={`WFH — ${MONFULL[Number(selected.split('-')[1]) - 1]} ${Number(selected.split('-')[2])}, ${selected.split('-')[0]}`}
+          title={`${title} — ${MONFULL[Number(selected.split('-')[1]) - 1]} ${Number(selected.split('-')[2])}, ${selected.split('-')[0]}`}
           onClose={() => setSelected(null)}
         >
           {whoOn(selected).length ? (
             whoOn(selected).map(personRow)
           ) : (
-            <div className="empty-note">Nobody is marked WFH on this date.</div>
+            <div className="empty-note">Nobody is marked on this date.</div>
           )}
           {inRoster && (
             <button className="tool-new" style={{ width: '100%', marginTop: 12 }} onClick={() => toggleMine(selected)}>
-              {mineOn(selected) ? 'Remove my WFH on this date' : 'Add me — WFH this date'}
+              {mineOn(selected) ? removeLabel : addLabel}
             </button>
           )}
         </ListModal>

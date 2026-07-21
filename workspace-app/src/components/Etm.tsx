@@ -14,7 +14,14 @@ import DatePicker from '@/components/DatePicker';
 import EtmCalendar from '@/components/EtmCalendar';
 import EtmProfile from '@/components/EtmProfile';
 import EtmSummary from '@/components/EtmSummary';
-import WfhCalendar from '@/components/WfhCalendar';
+import ScheduleCalendar from '@/components/ScheduleCalendar';
+import Select from '@/components/Select';
+
+const CAL_VIEWS = [
+  { key: 'bir', label: 'BIR Tax Calendar' },
+  { key: 'wfh', label: 'Work From Home Schedule' },
+  { key: 'field', label: 'Fieldwork and Meetings' },
+] as const;
 
 const STATUS_CYCLE: SheetStatus[] = ['Pending', 'Ongoing', 'Done'];
 
@@ -68,6 +75,7 @@ export default function Etm({
   const [internRoster, setInternRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
   const [addFor, setAddFor] = useState<string | null>(null); // email the add popup targets
+  const [calView, setCalView] = useState<'bir' | 'wfh' | 'field'>('bir');
   const [lockNotice, setLockNotice] = useState<string | null>(null); // task name whose status is locked
 
   useEffect(() => {
@@ -391,10 +399,57 @@ export default function Etm({
         />
       )}
       {tab === 'calendar' && (
-        <div className="cal-duo">
-          <EtmCalendar assignees={assignees} onAssign={assignFiling} />
-          <WfhCalendar roster={roster} myEmail={myEmail} usersMap={usersMap} emailToUid={emailToUid} />
-        </div>
+        <>
+          <div className="cal-pick">
+            <span className="cal-pick-label">Calendar</span>
+            <Select
+              value={CAL_VIEWS.find((v) => v.key === calView)?.label || CAL_VIEWS[0].label}
+              options={CAL_VIEWS.map((v) => v.label)}
+              ariaLabel="Choose calendar"
+              onChange={(label) => {
+                const hit = CAL_VIEWS.find((v) => v.label === label);
+                if (hit) setCalView(hit.key);
+              }}
+            />
+          </div>
+          <div className="cal-single">
+            {calView === 'bir' && <EtmCalendar assignees={assignees} onAssign={assignFiling} />}
+            {calView === 'wfh' && (
+              <ScheduleCalendar
+                docKey="wfh"
+                title="Work From Home Schedule"
+                hint={`click a date to see who’s home${roster.includes(myEmail) ? ' or mark your own' : ''}`}
+                accent="blue"
+                todayTitle="WFH Today"
+                tomorrowTitle="WFH Tomorrow"
+                emptyDay="Everyone’s on site."
+                addLabel="Add me — WFH this date"
+                removeLabel="Remove my WFH on this date"
+                roster={roster}
+                myEmail={myEmail}
+                usersMap={usersMap}
+                emailToUid={emailToUid}
+              />
+            )}
+            {calView === 'field' && (
+              <ScheduleCalendar
+                docKey="fieldwork"
+                title="Fieldwork and Meetings"
+                hint={`click a date to see who’s out${roster.includes(myEmail) ? ' or mark your own' : ''}`}
+                accent="amber"
+                todayTitle="On Fieldwork / Meeting Today"
+                tomorrowTitle="On Fieldwork / Meeting Tomorrow"
+                emptyDay="Everyone’s in the office."
+                addLabel="Add me — fieldwork/meeting this date"
+                removeLabel="Remove my schedule on this date"
+                roster={roster}
+                myEmail={myEmail}
+                usersMap={usersMap}
+                emailToUid={emailToUid}
+              />
+            )}
+          </div>
+        </>
       )}
       {tab === 'mine' && (
         <>

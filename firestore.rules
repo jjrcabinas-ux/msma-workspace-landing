@@ -66,6 +66,11 @@ service cloud.firestore {
       allow read: if isStaff();
       allow write: if isAdmin() || isTaskOwner(email);
     }
+    // Fieldwork and meetings schedule — same shape and rules as WFH.
+    match /members/{email}/fieldwork/{doc} {
+      allow read: if isStaff();
+      allow write: if isAdmin() || isTaskOwner(email);
+    }
     match /members/{email}/tasks/{taskId} {
       allow read: if isStaff();
       allow create: if (isAdmin() || isTaskOwner(email) || isSeniorAssocOfSameCluster(email)) && validTask();
