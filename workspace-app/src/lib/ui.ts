@@ -28,6 +28,38 @@ export function formatMobile(raw: string): string {
   return raw.trim();
 }
 
+/** Short two-tone notification chime, synthesized with Web Audio so there's
+ *  no sound file to load. Browsers block audio until the user has interacted
+ *  with the page at least once — before that this quietly does nothing. */
+export function playChime() {
+  try {
+    const ctx = new AudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.close().catch(() => {});
+      return;
+    }
+    const now = ctx.currentTime;
+    const tone = (freq: number, start: number, dur: number, peak: number) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, now + start);
+      g.gain.linearRampToValueAtTime(peak, now + start + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(now + start);
+      o.stop(now + start + dur + 0.05);
+    };
+    tone(880, 0, 0.3, 0.1); // A5
+    tone(1174.66, 0.11, 0.4, 0.08); // D6 — a gentle rising ding-ding
+    setTimeout(() => ctx.close().catch(() => {}), 1200);
+  } catch {
+    // no AudioContext (very old browser) — skip silently
+  }
+}
+
 // Photo approach ported from msma-task-monitor's AvatarUpload:
 // canvas cover-crop to a 200px square JPEG data URL.
 export function resizePhotoToDataUrl(file: File): Promise<string> {

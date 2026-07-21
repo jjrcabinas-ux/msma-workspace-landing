@@ -6,6 +6,7 @@ import { arrayUnion, collection, doc, getDoc, onSnapshot, setDoc } from 'firebas
 import { db, isAdminEmail } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { daysBetween, todayISO, weekRange } from '@/lib/dates';
+import { playChime } from '@/lib/ui';
 import { useMyTasks } from '@/hooks/useMyTasks';
 import { useMyWfh } from '@/hooks/useMyWfh';
 import { useUsersMap } from '@/hooks/useUsersMap';
@@ -231,6 +232,17 @@ export default function Shell({ user }: { user: User }) {
       });
     return list.slice(0, 8);
   }, [personal, myTasks, myWfh, anns, myCluster, dismissed]);
+
+  // Chime when a NEW notification appears while the app is open. The first
+  // seconds after load are muted — the initial subscriptions stream in the
+  // existing notifications one by one and shouldn't ring for each.
+  const seenNotifIds = useRef<Set<string>>(new Set());
+  const notifMuteUntil = useRef(Date.now() + 8000);
+  useEffect(() => {
+    const fresh = notifs.some((n) => !seenNotifIds.current.has(n.id));
+    seenNotifIds.current = new Set(notifs.map((n) => n.id));
+    if (fresh && Date.now() > notifMuteUntil.current) playChime();
+  }, [notifs]);
 
   const openTaskTab = useCallback((dest: EtmTab) => {
     setBoard('tasks');
