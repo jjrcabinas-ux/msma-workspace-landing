@@ -41,9 +41,12 @@ export default function AddDeliverableModal({
         <div className="uname-card" role="dialog" aria-modal="true" aria-labelledby="addt-remind">
           <h3 id="addt-remind">One reminder before saving</h3>
           <p>
-            If this deliverable goes <b style={{ color: 'var(--white)' }}>3 or more days past its due date</b> without
-            being marked Done, you won’t be able to change its status yourself anymore. You’ll need to coordinate with
-            your <b style={{ color: 'var(--white)' }}>direct supervisor</b>, who can update the status for you.
+            Once saved, only <b style={{ color: 'var(--white)' }}>Status</b> and{' '}
+            <b style={{ color: 'var(--white)' }}>Help needed</b> stay editable — the task, dates, and details are
+            final, so double-check them. And if this deliverable goes{' '}
+            <b style={{ color: 'var(--white)' }}>3 or more days past its due date</b> without being marked Done, you
+            won’t be able to change its status yourself anymore. You’ll need to coordinate with your{' '}
+            <b style={{ color: 'var(--white)' }}>direct supervisor</b>, who can update it for you.
           </p>
           <div className="uname-actions">
             <button

@@ -268,20 +268,23 @@ export default function Etm({
               className="etm-row"
               key={`${t.id}|${t.date}|${t.task}|${t.details}|${t.due}|${t.status}|${t.help}`}
             >
+              {/* Saved task info is immutable for members — only the admin
+                  (direct supervisor) can correct it. Status and Help needed
+                  stay editable below. */}
               <div>
-                <DatePicker value={t.date} ariaLabel="Date" disabled={!editable}
+                <DatePicker value={t.date} ariaLabel="Date" disabled={!isAdmin}
                   onChange={(iso) => updateTask(email, t, { date: iso })} />
               </div>
               <div>
-                <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!editable}
+                <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!isAdmin}
                   onBlur={(e) => { if (e.target.value !== t.task) updateTask(email, t, { task: e.target.value }); }} />
               </div>
               <div>
-                <input className="etm-input" defaultValue={t.details} placeholder="Details" disabled={!editable}
+                <input className="etm-input" defaultValue={t.details} placeholder="Details" disabled={!isAdmin}
                   onBlur={(e) => { if (e.target.value !== t.details) updateTask(email, t, { details: e.target.value }); }} />
               </div>
               <div>
-                <DatePicker value={t.due} ariaLabel="Due date" disabled={!editable}
+                <DatePicker value={t.due} ariaLabel="Due date" disabled={!isAdmin}
                   onChange={(iso) => updateTask(email, t, { due: iso })} />
               </div>
               <div>
@@ -306,7 +309,7 @@ export default function Etm({
                   onBlur={(e) => { if (e.target.value !== t.help) updateTask(email, t, { help: e.target.value }); }} />
               </div>
               <div>
-                {editable && (
+                {isAdmin && (
                   <button className="etm-del" title="Delete row" aria-label="Delete row"
                     onClick={() => removeTask(email, t.id)}>
                     ✕

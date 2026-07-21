@@ -41,12 +41,20 @@ service cloud.firestore {
         && resource.data.due + duration.value(3, 'd') < request.time;
     }
     // Task Monitoring deliverables: one doc per task. Staff read the
-    // cluster sheets; owners write their own except locked tasks.
+    // cluster sheets. Once saved, a task's information is immutable for
+    // the owner — only status and help may change (and not even those
+    // once the overdue lock engages). Deletion and corrections are the
+    // admin's (direct supervisor's) alone, so delete-and-recreate can't
+    // dodge the immutability.
     match /members/{email}/tasks/{taskId} {
       allow read: if isStaff();
       allow create: if (isAdmin() || isTaskOwner(email)) && validTask();
-      allow update: if isAdmin() || (isTaskOwner(email) && !lockedTask() && validTask());
-      allow delete: if isAdmin() || (isTaskOwner(email) && !lockedTask());
+      allow update: if isAdmin() || (
+        isTaskOwner(email)
+        && !lockedTask()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'help'])
+      );
+      allow delete: if isAdmin();
     }
     // Personal boards: each member reads/writes only their own; admin sees all.
     match /users/{uid}/boards/{board} {
