@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { POSITIONS } from '@/lib/types';
@@ -24,6 +24,7 @@ export default function ProfileModal({
   onSaved: (d: UserProfile) => void;
 }) {
   const [fullName, setFullName] = useState(initial.fullName || '');
+  const [username, setUsername] = useState(initial.username || '');
   const [email, setEmail] = useState(initial.email || user.email || '');
   const [birthdate, setBirthdate] = useState(initial.birthdate || '');
   const [mobile, setMobile] = useState(initial.mobile || '');
@@ -35,7 +36,14 @@ export default function ProfileModal({
   async function save() {
     setError('');
     const em = email.trim().toLowerCase();
+    const uname = username.trim().toLowerCase();
+    const oldUname = (initial.username || '').toLowerCase();
     if (!fullName.trim()) { setError('Please enter your full name.'); return; }
+    if (oldUname && !uname) { setError('You need a username — it’s what you sign in with.'); return; }
+    if (uname && !/^[a-z0-9._-]{3,20}$/.test(uname)) {
+      setError('Username: 3–20 characters — letters, numbers, dots, dashes, or underscores.');
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setError('Enter a valid email address.'); return; }
     if (!position) { setError('Please select your position.'); return; }
     if (mobile && !/^[0-9+()\-\s]{7,16}$/.test(mobile)) { setError('That mobile number doesn’t look right.'); return; }
@@ -49,6 +57,21 @@ export default function ProfileModal({
     };
     if (photo) data.photo = photo;
     try {
+      // Username change: claim the new mapping, then release the old one —
+      // the landing sign-in resolves username → email through /usernames.
+      if (uname && uname !== oldUname) {
+        const ref = doc(db, 'usernames', uname);
+        const existing = await getDoc(ref);
+        if (existing.exists() && existing.data().uid !== user.uid) {
+          setError('That username is already taken — try another.');
+          return;
+        }
+        await setDoc(ref, { uid: user.uid, email: user.email });
+        if (oldUname) await deleteDoc(doc(db, 'usernames', oldUname)).catch(() => {});
+        data.username = uname;
+      } else if (uname) {
+        data.username = uname;
+      }
       await setDoc(doc(db, 'users', user.uid), data, { merge: true });
       onSaved(data);
     } catch {
@@ -96,6 +119,19 @@ export default function ProfileModal({
           <div className="prof-field full">
             <label htmlFor="prof-name">Full name</label>
             <input id="prof-name" className="mem-input" autoComplete="name" placeholder="Juan A. Dela Cruz" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="prof-field full">
+            <label htmlFor="prof-uname">Username</label>
+            <input
+              id="prof-uname"
+              className="mem-input"
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={20}
+              placeholder="e.g. jcabs — used for signing in"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
           </div>
           <div className="prof-field full">
             <label htmlFor="prof-email">Email</label>
