@@ -65,6 +65,15 @@ service cloud.firestore {
     match /taxrecords/{id} {
       allow read, create, update, delete: if isStaff();
     }
+    // Working-paper data per client (employee masterlist, computations,
+    // drafts, annualization, DAT records) — staff-maintained like the rest
+    // of the tax compliance module.
+    match /wpdata/{clientId} {
+      allow read, create, update, delete: if isStaff();
+      match /{sub}/{docId} {
+        allow read, create, update, delete: if isStaff();
+      }
+    }
     // Broadcast reminders shown in every member's notification bell.
     // Admin sends; staff read.
     match /announcements/{id} {

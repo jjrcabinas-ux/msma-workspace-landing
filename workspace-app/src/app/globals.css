@@ -772,6 +772,53 @@ textarea.mem-input{width:100%}
 .tc-jump{width:100%;text-align:left;cursor:pointer;align-items:center}
 .tc-jump:hover{background:rgba(163,197,255,.05)}
 
+/* ---------- Working Paper (1601-C suite) ---------- */
+.wp-table{width:100%;border-collapse:collapse;font-size:.76rem;color:var(--grey)}
+.wp-table th{
+  background:rgba(255,255,255,.03);color:var(--dim);font-size:.62rem;text-transform:uppercase;
+  letter-spacing:.05em;text-align:left;padding:7px 8px;border:1px solid var(--line);white-space:nowrap;
+}
+.wp-table td{padding:6px 8px;border:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+.wp-table .ta-c{text-align:center}
+.wp-table .ta-r{text-align:right}
+.wp-row{cursor:pointer}
+.wp-row:hover td{background:rgba(163,197,255,.04)}
+.wtc-scroll{overflow:auto;border:1px solid var(--line);border-radius:10px}
+.wtc-scroll table{width:max-content;min-width:100%}
+.wtc-scroll.dragging{user-select:none}
+.wp-table th.wtc-ic,.wp-table td.wtc-ic{background:rgba(163,230,53,.06)}
+.wp-table th.wtc-ic{color:var(--lime)}
+.wtc-warn{color:var(--amber)!important;font-weight:700}
+input.wtc-cell,select.wtc-cell{
+  background:var(--card);border:1px solid var(--line);border-radius:5px;color:var(--white);
+  font-size:.74rem;padding:4px 6px;min-width:86px;outline:none;font-family:inherit;
+}
+input.wtc-cell:focus{border-color:var(--lime)}
+input.wtc-cell.selcell{background:var(--lime-soft);border-color:var(--lime)}
+input.wtc-cell:disabled{color:var(--grey);background:var(--card-2)}
+select.wtc-cell{color-scheme:dark}
+.pm-chip{
+  display:inline-block;font-size:.6rem;font-weight:700;border-radius:5px;padding:2px 6px;margin-right:3px;
+  background:var(--lime-soft);color:#fff;
+}
+.pm-chip.next{background:none;border:1px solid var(--lime);color:var(--lime)}
+.pm-chip.full{background:var(--lime);color:#0A1628}
+.dat-sec{
+  font-size:.68rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--line);padding-bottom:4px;margin:16px 0 8px;
+}
+.dat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.dat-grid.three{grid-template-columns:1fr 1fr 1fr}
+.adj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 14px}
+.draft-frame{width:100%;height:min(70vh,900px);border:1px solid var(--line);border-radius:10px;background:#fff}
+.wp-toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:120;
+  background:var(--card);border:1px solid var(--line-strong);color:var(--white);
+  padding:10px 18px;border-radius:999px;font-size:.8rem;box-shadow:0 12px 34px rgba(0,0,0,.5);
+  animation:drop-open .18s ease;
+}
+@media (max-width:700px){ .dat-grid,.dat-grid.three{grid-template-columns:1fr} }
+
 /* ---------- Client Masterlist report (dropdown + A4 preview) ---------- */
 .rep-wrap{position:relative}
 .rep-pop{

@@ -49,7 +49,7 @@ function loadScriptOnce(src: string, integrity: string): Promise<void> {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let xlsxPromise: Promise<void> | null = null;
-function loadXlsx(): Promise<void> {
+export function loadXlsx(): Promise<void> {
   if ((window as any).XLSX) return Promise.resolve();
   if (!xlsxPromise) {
     xlsxPromise = loadScriptOnce(
@@ -60,8 +60,20 @@ function loadXlsx(): Promise<void> {
   return xlsxPromise;
 }
 
+let pdfLibPromise: Promise<void> | null = null;
+export function loadPdfLib(): Promise<void> {
+  if ((window as any).PDFLib) return Promise.resolve();
+  if (!pdfLibPromise) {
+    pdfLibPromise = loadScriptOnce(
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js',
+      'sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI'
+    ).catch((e) => { pdfLibPromise = null; throw e; });
+  }
+  return pdfLibPromise;
+}
+
 let jsPdfPromise: Promise<void> | null = null;
-function loadJsPdf(): Promise<void> {
+export function loadJsPdf(): Promise<void> {
   if ((window as any).jspdf?.jsPDF?.API?.autoTable) return Promise.resolve();
   if (!jsPdfPromise) {
     jsPdfPromise = loadScriptOnce(

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import type { Client } from '@/lib/types';
 import { todayISO } from '@/lib/dates';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/lib/birReturns';
 import ListModal from '@/components/ListModal';
 import Select from '@/components/Select';
+import WorkingPaper, { type WpJump } from '@/components/wp/WorkingPaper';
 
 // Tax Compliance — ported from the msma-tax-compliance system: the Overview
 // compliance dashboard plus the per-tax-type BIR return pipelines
@@ -56,6 +57,16 @@ export default function TaxCompliance({
   const [rqMsg, setRqMsg] = useState('');
   const [compId, setCompId] = useState<string | null>(null);
   const [compFilter, setCompFilter] = useState<string | null>(null);
+  const [wpJump, setWpJump] = useState<WpJump>(null);
+  const [toastMsg, setToastMsg] = useState('');
+  const [lockNote, setLockNote] = useState('');
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toast = (m: string) => {
+    setToastMsg(m);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(''), 2800);
+  };
+  const myName = (auth.currentUser?.email || '').split('@')[0] || 'staff';
 
   useEffect(() => {
     setClients([]);
@@ -137,6 +148,12 @@ export default function TaxCompliance({
       stage: rec.stage + 1,
       dates: { ...rec.dates, [STEPS[rec.stage].key]: todayISO() },
     });
+    // Data Received on 1601-C flows straight into the Withholding Tax Computation
+    if (ret === '1601C' && rec.stage + 1 === 2) {
+      toast('Data received — opening the Withholding Tax Computation');
+      setWpJump({ ret: '1601C', clientId: client.id, section: 'computation', ask: true });
+      setView('wp');
+    }
   }
 
   function stepRec(ret: RetKey, p: Period, client: Client, dir: number) {
@@ -151,10 +168,47 @@ export default function TaxCompliance({
       return;
     }
     if (dir === -1 && rec.stage > 0) {
-      const dates = { ...rec.dates };
-      delete dates[STEPS[rec.stage - 1].key];
-      writeRec(ret, p, client.id, { ...rec, stage: rec.stage - 1, dates });
+      const doBack = () => {
+        const dates = { ...rec.dates };
+        delete dates[STEPS[rec.stage - 1].key];
+        writeRec(ret, p, client.id, { ...rec, stage: rec.stage - 1, dates });
+      };
+      // a saved 1601-C draft locks the pipeline through Return Drafted
+      if (ret === '1601C' && rec.stage <= 3) {
+        const pk = periodKey(ret, p);
+        getDocs(query(collection(db, 'wpdata', client.id, 'drafts'), where('period', '==', pk)))
+          .then((s) => {
+            if (!s.empty) {
+              setLockNote(`${client.name} has a saved draft return for ${periodLabel(ret, p)} — the steps up to Return Drafted are locked and can no longer be unchecked.`);
+            } else {
+              doBack();
+            }
+          })
+          .catch(() => doBack());
+        return;
+      }
+      doBack();
     }
+  }
+
+  // A saved draft return advances the month's 1601-C pipeline to Return
+  // Drafted and lands on that month's pipeline page.
+  function draftSavedHook(client: Client, period: string) {
+    const [dy, dm] = period.split('-');
+    const p: Period = { y: +dy, m: +dm };
+    const rec = getRec('1601C', p, client.id);
+    if (rec.stage < 3) {
+      const dates = { ...rec.dates };
+      let stage = rec.stage;
+      while (stage < 3) {
+        const step = STEPS[stage];
+        if (!dates[step.key]) dates[step.key] = todayISO();
+        stage++;
+      }
+      writeRec('1601C', p, client.id, { ...rec, stage, dates });
+      toast(`Pipeline updated — ${periodLabel('1601C', p)} 1601-C is now Return Drafted`);
+    }
+    goto('WTC', '1601C', p);
   }
 
   function goto(tax: string, ret: RetKey, p?: Period) {
@@ -517,7 +571,9 @@ export default function TaxCompliance({
         <div className="desc">
           {view === 'overview'
             ? `Compliance summary for the ${cluster} Cluster · full filing universe since Jan 2026`
-            : 'BIR return pipeline · click − / ＋ to move a filing through the steps'}
+            : view === 'wp'
+              ? 'Supporting working papers per BIR return — the 1601-C suite is fully built'
+              : 'BIR return pipeline · click − / ＋ to move a filing through the steps'}
         </div>
       </div>
 
@@ -527,12 +583,32 @@ export default function TaxCompliance({
           {TAX_KEYS.map((t) => (
             <button key={t} className={`tc-tab${view === t ? ' active' : ''}`} onClick={() => goto(t, activeRet[t] || TAX_PAGES[t].returns[0])}>{t}</button>
           ))}
+          <button className={`tc-tab${view === 'wp' ? ' active' : ''}`} onClick={() => setView('wp')}>Working Paper</button>
         </div>
         {view === 'overview' && <Select value={scope} options={SCOPE_OPTS} onChange={setScope} ariaLabel="Period scope" />}
         {isAdmin && <Select value={adminCluster} options={HOME_CLUSTERS} onChange={setAdminCluster} ariaLabel="Cluster" />}
       </div>
 
-      {view === 'overview' ? renderOverview() : renderTaxPage(view)}
+      {view === 'wp' ? (
+        <WorkingPaper
+          cluster={cluster}
+          clients={clients}
+          myName={myName}
+          jump={wpJump}
+          onJumpDone={() => setWpJump(null)}
+          toast={toast}
+          onDraftSaved={draftSavedHook}
+          taxRecordStage={(clientId, period) => (records[`1601C|${period}`] || {})[clientId] || { stage: 0, dates: {} }}
+        />
+      ) : view === 'overview' ? renderOverview() : renderTaxPage(view)}
+
+      {toastMsg && <div className="wp-toast">{toastMsg}</div>}
+
+      {lockNote && (
+        <ListModal title="Pipeline locked" onClose={() => setLockNote('')}>
+          <p style={{ fontSize: '.84rem', lineHeight: 1.6 }}>{lockNote}</p>
+        </ListModal>
+      )}
 
       {compDetail && (
         <ListModal className="cal-wide" title={compDetail.c.name} onClose={() => setCompId(null)}>
