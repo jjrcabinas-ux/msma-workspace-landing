@@ -16,8 +16,8 @@ type Row = { t: SheetTask; email: string; label: string; idx: number };
 const RING_C = 2 * Math.PI * 54;
 
 const STATUS_META: Record<SheetStatus, { color: string; bg: string }> = {
-  Pending: { color: 'var(--amber)', bg: 'rgba(251,191,36,.15)' },
-  Ongoing: { color: 'var(--blue)', bg: 'rgba(96,165,250,.15)' },
+  Pending: { color: 'var(--white)', bg: 'rgba(251,191,36,.15)' },
+  Ongoing: { color: 'var(--white)', bg: 'rgba(96,165,250,.15)' },
   Done: { color: 'var(--white)', bg: 'var(--lime-soft)' },
 };
 

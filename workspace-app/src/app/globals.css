@@ -302,9 +302,9 @@ a{color:inherit;text-decoration:none}
 .snap-owner{color:var(--dim);font-size:.74rem}
 .badge{font-size:.68rem;font-weight:700;border-radius:6px;padding:3px 8px;flex:none}
 .badge.done{background:var(--lime-soft);color:var(--white)}
-.badge.working{background:rgba(251,191,36,.15);color:var(--amber)}
-.badge.stuck{background:rgba(248,113,113,.15);color:var(--red)}
-.badge.review{background:rgba(96,165,250,.15);color:var(--blue)}
+.badge.working{background:rgba(251,191,36,.15);color:var(--white)}
+.badge.stuck{background:rgba(248,113,113,.15);color:var(--white)}
+.badge.review{background:rgba(96,165,250,.15);color:var(--white)}
 .sum-heading{font-weight:700;margin:6px 0 12px}
 .sum-heading span{color:var(--dim);font-weight:400;font-size:.8rem}
 .see-more{margin-top:8px;font-size:.75rem;font-weight:600;color:var(--lime);padding:6px 10px;border-radius:7px}
