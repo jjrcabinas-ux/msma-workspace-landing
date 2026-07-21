@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Timestamp, collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { Timestamp, arrayUnion, collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
 import { daysBetween, toIso, todayISO } from '@/lib/dates';
@@ -166,12 +166,24 @@ export default function Etm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roster]);
 
+  // Deliverables that mention fieldwork or a meeting auto-mark the
+  // Fieldwork and Meetings calendar on their due date (or task date).
+  // Additive only — it never removes manually marked days.
+  const FIELD_RE = /\b(field\s?works?|meetings?|mtg)\b/i;
+  function syncFieldwork(email: string, t: Pick<SheetTask, 'task' | 'details' | 'due' | 'date'>) {
+    if (!FIELD_RE.test(`${t.task} ${t.details}`)) return;
+    const iso = t.due || t.date;
+    if (!iso) return;
+    setDoc(doc(db, 'members', email, 'fieldwork', 'main'), { dates: arrayUnion(iso) }, { merge: true }).catch(() => {});
+  }
+
   function updateTask(email: string, t: SheetTask, patch: Partial<SheetTask>) {
     const data: Record<string, unknown> = { ...patch };
     delete data.order;
     if (patch.due !== undefined) data.due = dueToTs(patch.due);
     updateDoc(taskRef(email, t.id), data).catch(() => {});
     setSheets((s) => ({ ...s, [email]: (s[email] || []).map((x) => (x.id === t.id ? { ...x, ...patch } : x)) }));
+    syncFieldwork(email, { ...t, ...patch });
   }
 
   function removeTask(email: string, id: string) {
@@ -191,6 +203,7 @@ export default function Etm({
       createdAt: Timestamp.now(),
     }).catch(() => {});
     setSheets((s) => ({ ...s, [email]: [...(s[email] || []), { id, ...t }] }));
+    syncFieldwork(email, t);
   }
 
   const labelOf = (email: string) => {
