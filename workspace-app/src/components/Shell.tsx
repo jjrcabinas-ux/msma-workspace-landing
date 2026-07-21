@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db, isAdminEmail } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { daysBetween, todayISO, weekRange } from '@/lib/dates';
@@ -134,13 +134,48 @@ export default function Shell({ user }: { user: User }) {
   const inRegistry = !isAdmin || (myCluster || '') !== '';
   const myTasks = useMyTasks(inRegistry ? myEmail : '');
   const myWfh = useMyWfh(inRegistry ? myEmail : '');
+
+  // Admin-sent broadcasts (announcements collection). weekly-encode ones
+  // hide themselves for users who already encoded this week.
+  type Ann = { id: string; title: string; sub: string; dest: EtmTab; type: string; expires: string };
+  const [anns, setAnns] = useState<Ann[]>([]);
+  useEffect(() => {
+    return onSnapshot(
+      collection(db, 'announcements'),
+      (snap) => {
+        const list: Ann[] = [];
+        snap.forEach((d) => {
+          const v = d.data();
+          list.push({
+            id: d.id,
+            title: (v.title as string) || '',
+            sub: (v.sub as string) || '',
+            dest: ((v.dest as string) || 'mine') as EtmTab,
+            type: (v.type as string) || 'general',
+            expires: (v.expires as string) || '9999-12-31',
+          });
+        });
+        setAnns(list);
+      },
+      () => {}
+    );
+  }, []);
+
   const notifs = useMemo(() => {
-    if (!inRegistry) return [];
-    const today = todayISO();
-    const wk = weekRange(today);
-    const list: { id: string; title: string; sub: string; dest: EtmTab }[] = [];
-    const hasThisWeek = myTasks.some((t) => t.date >= wk.start && t.date <= wk.end);
-    if (!hasThisWeek) {
+    const today0 = todayISO();
+    const wk0 = weekRange(today0);
+    const hasThisWeek0 = myTasks.some((t) => t.date >= wk0.start && t.date <= wk0.end);
+    const annList = anns
+      .filter((a) => a.title && a.expires >= today0)
+      .filter((a) => a.type !== 'weekly-encode' || !(inRegistry && hasThisWeek0))
+      .map((a) => ({ id: `ann-${a.id}`, title: a.title, sub: a.sub, dest: a.dest }));
+    if (!inRegistry) return annList.slice(0, 8);
+    const today = today0;
+    const wk = wk0;
+    const list: { id: string; title: string; sub: string; dest: EtmTab }[] = [...annList];
+    const hasThisWeek = hasThisWeek0;
+    const hasWeeklyAnn = anns.some((a) => a.type === 'weekly-encode' && a.expires >= today0);
+    if (!hasThisWeek && !hasWeeklyAnn) {
       list.push({
         id: 'week',
         title: 'No deliverables encoded for this week yet',
@@ -174,7 +209,7 @@ export default function Shell({ user }: { user: User }) {
         });
       });
     return list.slice(0, 8);
-  }, [inRegistry, myTasks, myWfh]);
+  }, [inRegistry, myTasks, myWfh, anns]);
 
   const openTaskTab = useCallback((dest: EtmTab) => {
     setBoard('tasks');

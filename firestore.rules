@@ -54,6 +54,12 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/members/$(request.auth.token.email.lower())).data.get('cluster', '') ==
            get(/databases/$(database)/documents/members/$(email)).data.get('cluster', 'none');
     }
+    // Broadcast reminders shown in every member's notification bell.
+    // Admin sends; staff read.
+    match /announcements/{id} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
     // Work-from-home schedule: one doc per member holding their WFH dates.
     // Staff see everyone's; each member marks only their own days.
     match /members/{email}/wfh/{doc} {
