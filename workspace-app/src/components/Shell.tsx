@@ -157,7 +157,7 @@ export default function Shell({ user }: { user: User }) {
           )}
           {board === 'members' &&
             (isAdmin ? (
-              <MembersAdmin />
+              <MembersAdmin emailToUid={emailToUid} />
             ) : (
               <>
                 <div className="board-head"><h1>Members</h1></div>

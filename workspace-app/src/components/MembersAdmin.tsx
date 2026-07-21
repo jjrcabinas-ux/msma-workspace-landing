@@ -5,6 +5,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -12,16 +13,29 @@ import {
   type Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { UserProfile } from '@/lib/types';
 import { CLUSTERS } from '@/lib/types';
+import { fmtShort } from '@/lib/dates';
+import { initialsOf } from '@/lib/ui';
+import ListModal from '@/components/ListModal';
 import Select from '@/components/Select';
 
 type MemberRow = { email: string; cluster: string; addedAt: Timestamp | null };
 
-export default function MembersAdmin() {
+export default function MembersAdmin({ emailToUid }: { emailToUid: Record<string, string> }) {
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [email, setEmail] = useState('');
   const [cluster, setCluster] = useState<string>(CLUSTERS[0]);
   const [error, setError] = useState('');
+  const [viewing, setViewing] = useState<{ email: string; cluster: string; profile: UserProfile } | null>(null);
+
+  function viewProfile(m: MemberRow) {
+    const uid = emailToUid[m.email];
+    if (!uid) return;
+    getDoc(doc(db, 'users', uid))
+      .then((s) => setViewing({ email: m.email, cluster: m.cluster, profile: (s.exists() ? s.data() : {}) as UserProfile }))
+      .catch(() => {});
+  }
 
   useEffect(() => {
     return onSnapshot(
@@ -98,6 +112,11 @@ export default function MembersAdmin() {
               </div>
               <div><span className="due">{m.addedAt ? m.addedAt.toDate().toLocaleDateString() : '—'}</span></div>
               <div>
+                {emailToUid[m.email] ? (
+                  <button className="mem-view" onClick={() => viewProfile(m)}>View profile</button>
+                ) : (
+                  <span className="mem-pending" title="No workspace account yet">Not registered</span>
+                )}
                 <button
                   className="mem-del"
                   onClick={() => {
@@ -118,6 +137,40 @@ export default function MembersAdmin() {
           </div>
         )}
       </div>
+
+      {viewing && (
+        <ListModal title="Member profile" onClose={() => setViewing(null)}>
+          <div className="mprof-head">
+            <div
+              className="prof-big-ava"
+              style={viewing.profile.photo ? { backgroundImage: `url(${viewing.profile.photo})` } : undefined}
+            >
+              {viewing.profile.photo ? '' : initialsOf(viewing.profile.fullName || viewing.email) || '?'}
+            </div>
+            <div>
+              <div className="mprof-name">{viewing.profile.fullName || '(no name yet)'}</div>
+              <div className="mprof-sub">
+                {viewing.profile.position || 'No position set'} · {viewing.cluster || 'No cluster'}
+              </div>
+            </div>
+          </div>
+          <div className="mprof-rows">
+            <div className="mprof-row"><span>Username</span><b>{viewing.profile.username || '—'}</b></div>
+            <div className="mprof-row"><span>Profile email</span><b>{viewing.profile.email || viewing.email}</b></div>
+            <div className="mprof-row"><span>Registered email</span><b>{viewing.email}</b></div>
+            <div className="mprof-row"><span>Birthdate</span><b>{viewing.profile.birthdate ? fmtShort(viewing.profile.birthdate) : '—'}</b></div>
+            <div className="mprof-row"><span>Mobile</span><b>{viewing.profile.mobile || '—'}</b></div>
+            <div className="mprof-row"><span>Position</span><b>{viewing.profile.position || '—'}</b></div>
+            <div className="mprof-row">
+              <span>Profile status</span>
+              <b style={{ color: viewing.profile.profileComplete ? 'var(--lime)' : 'var(--amber)' }}>
+                {viewing.profile.profileComplete ? 'Complete' : 'Incomplete'}
+              </b>
+            </div>
+          </div>
+          <div className="mprof-note">Passwords are hashed by Firebase Auth and can’t be viewed by anyone — including admins.</div>
+        </ListModal>
+      )}
     </>
   );
 }
