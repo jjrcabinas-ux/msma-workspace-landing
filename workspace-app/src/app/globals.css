@@ -363,6 +363,19 @@ a{color:inherit;text-decoration:none}
 .stat-label{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 .stat-value{font-size:1.3rem;font-weight:700;margin-top:2px}
 
+/* ---------- animated select ---------- */
+.sel-field{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-width:110px;text-align:left}
+.sel-caret{font-size:.65rem;color:var(--dim);transition:transform .2s ease}
+.sel-field.open .sel-caret{transform:rotate(180deg)}
+.sel-pop{
+  position:fixed;z-index:90;background:var(--card);border:1px solid var(--line-strong);
+  border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.5);padding:6px;
+  transform-origin:top center;animation:drop-open .16s ease;
+}
+.sel-opt{display:block;width:100%;text-align:left;padding:8px 12px;border-radius:7px;font-size:.82rem;color:var(--grey)}
+.sel-opt:hover{background:var(--card-2);color:var(--white)}
+.sel-opt.on{background:var(--lime-soft);color:var(--white);font-weight:700}
+
 /* ---------- date picker (Windows-calendar-style) ---------- */
 .dp-field{
   width:100%;text-align:left;font-size:.76rem;font-family:'IBM Plex Mono',monospace;

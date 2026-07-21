@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CLUSTERS } from '@/lib/types';
+import Select from '@/components/Select';
 
 type MemberRow = { email: string; cluster: string; addedAt: Timestamp | null };
 
@@ -75,11 +76,7 @@ export default function MembersAdmin() {
             if (e.key === 'Enter') addMember();
           }}
         />
-        <select className="mem-input" aria-label="Cluster" value={cluster} onChange={(e) => setCluster(e.target.value)}>
-          {CLUSTERS.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
+        <Select value={cluster} options={CLUSTERS} onChange={setCluster} ariaLabel="Cluster" />
         <button className="tool-new" onClick={addMember}>+ Add member</button>
       </div>
       {error && <div className="mem-error" role="alert">{error}</div>}
@@ -92,16 +89,12 @@ export default function MembersAdmin() {
             <div className="grow item" key={m.email}>
               <div><span className="name">{m.email}</span></div>
               <div>
-                <select
-                  className="mem-input"
-                  aria-label={`Cluster for ${m.email}`}
+                <Select
                   value={m.cluster}
-                  onChange={(e) => updateDoc(doc(db, 'members', m.email), { cluster: e.target.value }).catch(() => {})}
-                >
-                  {CLUSTERS.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
+                  options={CLUSTERS}
+                  ariaLabel={`Cluster for ${m.email}`}
+                  onChange={(c) => updateDoc(doc(db, 'members', m.email), { cluster: c }).catch(() => {})}
+                />
               </div>
               <div><span className="due">{m.addedAt ? m.addedAt.toDate().toLocaleDateString() : '—'}</span></div>
               <div>
