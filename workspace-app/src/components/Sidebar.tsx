@@ -70,9 +70,9 @@ export default function Sidebar({
           </div>
         </div>
       )}
-      {item('tax', 'Tax Compliance System')}
-      {item('audit', 'Audit')}
+      {item('tax', 'Tax Compliance')}
       {item('books', 'Bookkeeping')}
+      {item('audit', 'Audit')}
       {item('clients', 'Client Masterlist')}
       {isAdmin && item('members', 'Members')}
       <div className="sb-foot">{item('settings', '⚙ Settings')}</div>

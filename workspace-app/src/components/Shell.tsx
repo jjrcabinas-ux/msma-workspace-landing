@@ -17,9 +17,9 @@ const SOON: Partial<Record<BoardKey, { title: string; note: string }>> = {
   // Deliberately parked: the Dashboard gets finalized after all the module
   // tabs are done (Dashboard.tsx holds the earlier draft).
   dashboard: { title: 'Dashboard', note: 'The firm-wide dashboard is being finalized last — module summaries live inside each tab for now.' },
-  tax: { title: 'Tax Compliance System', note: 'This module is being built next — the BIR filing pipeline will live here.' },
-  audit: { title: 'Audit', note: 'This module is being built next — engagement stages across clients will live here.' },
+  tax: { title: 'Tax Compliance', note: 'This module is being built next — the BIR filing pipeline will live here.' },
   books: { title: 'Bookkeeping', note: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
+  audit: { title: 'Audit', note: 'This module is being built next — engagement stages across clients will live here.' },
   clients: { title: 'Client Masterlist', note: 'This module is being built next — engagement coverage per client will live here.' },
   settings: { title: 'Settings', note: 'Workspace settings — user roles, clusters, and module preferences — arrive with the full build.' },
 };
