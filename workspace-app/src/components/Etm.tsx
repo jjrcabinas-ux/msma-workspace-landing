@@ -80,6 +80,16 @@ export default function Etm({
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
   const [addFor, setAddFor] = useState<string | null>(null); // email the add popup targets
   const [calView, setCalView] = useState<'all' | 'bir' | 'wfh' | 'field' | 'personal'>('bir');
+
+  // Deep link from the global search: open a specific calendar view.
+  useEffect(() => {
+    const h = (e: Event) => {
+      const v = (e as CustomEvent).detail as string;
+      if (CAL_VIEWS.some((c) => c.key === v)) setCalView(v as typeof calView);
+    };
+    window.addEventListener('msma-cal-view', h);
+    return () => window.removeEventListener('msma-cal-view', h);
+  }, []);
   const [lockNotice, setLockNotice] = useState<string | null>(null); // task name whose status is locked
 
   useEffect(() => {

@@ -41,6 +41,18 @@ export default function ClientMasterlist({
   const [repBusy, setRepBusy] = useState('');
   const [repError, setRepError] = useState('');
 
+  // Deep link from the global search: an admin clicking a client hit lands
+  // on that client's cluster.
+  useEffect(() => {
+    if (!isAdmin) return;
+    const h = (e: Event) => {
+      const v = (e as CustomEvent).detail as string;
+      if (HOME_CLUSTERS.includes(v)) setAdminCluster(v);
+    };
+    window.addEventListener('msma-clients-cluster', h);
+    return () => window.removeEventListener('msma-clients-cluster', h);
+  }, [isAdmin]);
+
   // Close the report dropdown on outside clicks only — clicks inside it
   // (toggling the field checkboxes) must keep it open.
   const repRef = useRef<HTMLDivElement>(null);

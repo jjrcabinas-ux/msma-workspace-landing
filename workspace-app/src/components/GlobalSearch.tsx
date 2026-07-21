@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Timestamp, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
+import type { Client, SheetStatus, SheetTask, UsersMap } from '@/lib/types';
 import { birFilingsForMonth, type BirFiling } from '@/lib/birCalendar';
+import { RETURNS, TAX_KEYS, TAX_PAGES } from '@/lib/birReturns';
 import { fmtShort, shiftMonth, toIso, todayISO } from '@/lib/dates';
 import { empColor } from '@/lib/ui';
 import Pava from '@/components/Pava';
@@ -32,6 +33,14 @@ const STATUS_COLOR: Record<string, string> = {
   Done: 'var(--lime)',
 };
 
+// Deep links into module-internal views: the target board mounts first, then
+// the module hears the event and switches to the requested view.
+function fire(name: string, detail: string) {
+  setTimeout(() => window.dispatchEvent(new CustomEvent(name, { detail })), 150);
+}
+
+type ClientHit = Pick<Client, 'id' | 'name' | 'tin' | 'cluster' | 'channel' | 'preparer'>;
+
 export default function GlobalSearch({
   usersMap,
   emailToUid,
@@ -50,6 +59,7 @@ export default function GlobalSearch({
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [hits, setHits] = useState<TaskHit[] | null>(null);
+  const [clientHits, setClientHits] = useState<ClientHit[]>([]);
   const [clusters, setClusters] = useState<Record<string, string>>({});
   const loadedAt = useRef(0);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -57,6 +67,24 @@ export default function GlobalSearch({
   async function load() {
     if (Date.now() - loadedAt.current < 60_000) return;
     loadedAt.current = Date.now();
+    getDocs(collection(db, 'clients'))
+      .then((snap) => {
+        const list: ClientHit[] = [];
+        snap.forEach((d) => {
+          const v = d.data();
+          list.push({
+            id: d.id,
+            name: (v.name as string) || '',
+            tin: (v.tin as string) || '',
+            cluster: ((v.cluster as string) || '').toUpperCase(),
+            channel: (v.channel as Client['channel']) || '',
+            preparer: (v.preparer as string) || '',
+          });
+        });
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        setClientHits(list);
+      })
+      .catch(() => {});
     try {
       const ms = await getDocs(collection(db, 'members'));
       const members: { email: string; cluster: string }[] = [];
@@ -153,8 +181,19 @@ export default function GlobalSearch({
       ...NAV_ITEMS.map((n) => ({ label: n.label, kw: n.label.toLowerCase(), run: () => onNavigate(n.board) })),
       { label: 'My Deliverables', kw: 'my deliverables encode add task sheet', run: () => onOpenTab('mine') },
       { label: 'Team Summary', kw: 'team summary kpi leaderboard workload blockers snapshot completion', run: () => onOpenTab('summary') },
-      { label: 'BIR Tax Calendar', kw: 'bir tax calendar deadline filing due', run: () => onOpenTab('calendar') },
-      { label: 'Work From Home Schedule', kw: 'wfh work from home schedule onsite', run: () => onOpenTab('calendar') },
+      { label: 'BIR Tax Calendar', kw: 'bir tax calendar deadline filing due', run: () => { onOpenTab('calendar'); fire('msma-cal-view', 'bir'); } },
+      { label: 'Work From Home Schedule', kw: 'wfh work from home schedule onsite', run: () => { onOpenTab('calendar'); fire('msma-cal-view', 'wfh'); } },
+      { label: 'Fieldwork and Meetings — Calendar', kw: 'fieldwork field work meetings mtg calendar out', run: () => { onOpenTab('calendar'); fire('msma-cal-view', 'field'); } },
+      { label: 'Personal Calendar', kw: 'personal calendar private events my calendar', run: () => { onOpenTab('calendar'); fire('msma-cal-view', 'personal'); } },
+      { label: 'All Calendars', kw: 'all calendars consolidated combined calendar view', run: () => { onOpenTab('calendar'); fire('msma-cal-view', 'all'); } },
+      { label: 'Tax Compliance — Overview', kw: 'tax compliance overview dashboard filings needs attention company summary', run: () => { onNavigate('tax'); fire('msma-tax-view', 'overview'); } },
+      ...TAX_KEYS.map((t) => ({
+        label: `${TAX_PAGES[t].title} — Tax Compliance`,
+        kw: `${t} ${TAX_PAGES[t].returns.map((r) => `${RETURNS[r].form} ${RETURNS[r].name}`).join(' ')} pipeline return`.toLowerCase(),
+        run: () => { onNavigate('tax'); fire('msma-tax-view', t); },
+      })),
+      { label: 'Working Paper — 1601-C suite', kw: 'working paper wp employee masterlist withholding tax computation draft return annualization dat file alphalist payroll 1601c 2316 1604c', run: () => { onNavigate('tax'); fire('msma-tax-view', 'wp'); } },
+      { label: 'Generate client report', kw: 'generate report client masterlist pdf excel export a4 print', run: () => onNavigate('clients') },
       { label: 'Intern tab', kw: 'intern interns monitoring', run: () => onOpenTab('interns') },
       { label: 'Cluster Directory', kw: 'cluster directory contacts mobile birthday dob email', run: () => onNavigate('settings') },
       { label: 'Send Announcement', kw: 'send announcement broadcast reminder bell', run: () => onNavigate('settings') },
@@ -165,9 +204,12 @@ export default function GlobalSearch({
       { label: 'Interns — Task Monitoring', kw: 'intern interns group', run: () => onOpenTasks('INTERN') },
     ];
     const nav = gotos.filter((g) => `${g.label} ${g.kw}`.toLowerCase().includes(query)).slice(0, 6);
-    return { tasks, people, filings, nav };
+    const clientsRes = clientHits
+      .filter((c) => `${c.name} ${c.tin} ${c.preparer} ${c.cluster}`.toLowerCase().includes(query))
+      .slice(0, 6);
+    return { tasks, people, filings, nav, clients: clientsRes };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, hits, usersMap]);
+  }, [query, hits, usersMap, clientHits]);
 
   const loading = query !== '' && hits === null;
 
@@ -242,6 +284,30 @@ export default function GlobalSearch({
                   ))}
                 </>
               )}
+              {results.clients.length > 0 && (
+                <>
+                  <div className="gs-group">Clients</div>
+                  {results.clients.map((c) => (
+                    <button
+                      key={c.id}
+                      className="gs-row"
+                      onClick={() => {
+                        setOpen(false);
+                        onNavigate('clients');
+                        fire('msma-clients-cluster', c.cluster);
+                      }}
+                    >
+                      {c.channel ? <span className={`chan-chip ${c.channel === 'eBIR' ? 'ebir' : 'efps'}`}>{c.channel}</span> : <span className="form-chip">C</span>}
+                      <div className="gs-body">
+                        {c.name}
+                        <div className="gs-sub">
+                          TIN {c.tin || '—'} · {c.cluster || '—'}{c.preparer ? ` · ${c.preparer}` : ''}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
               {results.filings.length > 0 && (
                 <>
                   <div className="gs-group">BIR Calendar</div>
@@ -274,7 +340,7 @@ export default function GlobalSearch({
                   ))}
                 </>
               )}
-              {!results.tasks.length && !results.people.length && !results.filings.length && !results.nav.length && (
+              {!results.tasks.length && !results.people.length && !results.filings.length && !results.nav.length && !results.clients.length && (
                 <div className="gs-empty">Walang tumugma sa “{q.trim()}”.</div>
               )}
             </>

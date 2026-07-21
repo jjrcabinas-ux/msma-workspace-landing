@@ -68,6 +68,16 @@ export default function TaxCompliance({
   };
   const myName = (auth.currentUser?.email || '').split('@')[0] || 'staff';
 
+  // Deep links from the global search: switch to the requested view.
+  useEffect(() => {
+    const h = (e: Event) => {
+      const v = (e as CustomEvent).detail as string;
+      if (v === 'overview' || v === 'wp' || TAX_KEYS.includes(v)) setView(v);
+    };
+    window.addEventListener('msma-tax-view', h);
+    return () => window.removeEventListener('msma-tax-view', h);
+  }, []);
+
   useEffect(() => {
     setClients([]);
     if (!cluster) return;
