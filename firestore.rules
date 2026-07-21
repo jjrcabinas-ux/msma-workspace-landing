@@ -59,6 +59,12 @@ service cloud.firestore {
     match /clients/{id} {
       allow read, create, update, delete: if isStaff();
     }
+    // Tax Compliance pipeline: one doc per client-return-period record,
+    // cluster-tagged. Any staff member maintains the pipeline, mirroring
+    // the tax compliance system's trust model.
+    match /taxrecords/{id} {
+      allow read, create, update, delete: if isStaff();
+    }
     // Broadcast reminders shown in every member's notification bell.
     // Admin sends; staff read.
     match /announcements/{id} {

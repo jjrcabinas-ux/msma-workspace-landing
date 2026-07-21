@@ -16,6 +16,7 @@ import ClientMasterlist from '@/components/ClientMasterlist';
 import Etm from '@/components/Etm';
 import MembersAdmin from '@/components/MembersAdmin';
 import SettingsPage from '@/components/SettingsPage';
+import TaxCompliance from '@/components/TaxCompliance';
 import UsernamePrompt from '@/components/UsernamePrompt';
 import ProfileModal from '@/components/ProfileModal';
 
@@ -44,7 +45,6 @@ const SOON: Partial<Record<BoardKey, { title: string; note: string }>> = {
   // Deliberately parked: the Dashboard gets finalized after all the module
   // tabs are done (Dashboard.tsx holds the earlier draft).
   dashboard: { title: 'Dashboard', note: 'The firm-wide dashboard is being finalized last — module summaries live inside each tab for now.' },
-  tax: { title: 'Tax Compliance', note: 'This module is being built next — the BIR filing pipeline will live here.' },
   books: { title: 'Bookkeeping', note: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
   audit: { title: 'Audit', note: 'This module is being built next — engagement stages across clients will live here.' },
 };
@@ -324,6 +324,9 @@ export default function Shell({ user }: { user: User }) {
           )}
           {board === 'clients' && (
             <ClientMasterlist isAdmin={isAdmin} myCluster={(myCluster || '').toUpperCase()} />
+          )}
+          {board === 'tax' && (
+            <TaxCompliance isAdmin={isAdmin} myCluster={(myCluster || '').toUpperCase()} />
           )}
           {board === 'settings' && (
             <SettingsPage isAdmin={isAdmin} myCluster={(myCluster || '').toUpperCase()} usersMap={usersMap} emailToUid={emailToUid} />
