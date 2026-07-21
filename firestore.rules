@@ -54,6 +54,12 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/members/$(request.auth.token.email.lower())).data.get('cluster', '') ==
            get(/databases/$(database)/documents/members/$(email)).data.get('cluster', 'none');
     }
+    // Work-from-home schedule: one doc per member holding their WFH dates.
+    // Staff see everyone's; each member marks only their own days.
+    match /members/{email}/wfh/{doc} {
+      allow read: if isStaff();
+      allow write: if isAdmin() || isTaskOwner(email);
+    }
     match /members/{email}/tasks/{taskId} {
       allow read: if isStaff();
       allow create: if (isAdmin() || isTaskOwner(email) || isSeniorAssocOfSameCluster(email)) && validTask();

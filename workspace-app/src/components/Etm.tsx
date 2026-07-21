@@ -14,6 +14,7 @@ import DatePicker from '@/components/DatePicker';
 import EtmCalendar from '@/components/EtmCalendar';
 import EtmProfile from '@/components/EtmProfile';
 import EtmSummary from '@/components/EtmSummary';
+import WfhCalendar from '@/components/WfhCalendar';
 
 const STATUS_CYCLE: SheetStatus[] = ['Pending', 'Ongoing', 'Done'];
 
@@ -386,7 +387,12 @@ export default function Etm({
           emailToUid={emailToUid}
         />
       )}
-      {tab === 'calendar' && <EtmCalendar assignees={assignees} onAssign={assignFiling} />}
+      {tab === 'calendar' && (
+        <div className="cal-duo">
+          <EtmCalendar assignees={assignees} onAssign={assignFiling} />
+          <WfhCalendar roster={roster} myEmail={myEmail} usersMap={usersMap} emailToUid={emailToUid} />
+        </div>
+      )}
       {tab === 'mine' && (
         <>
           <div style={{ height: 16 }} />
