@@ -24,6 +24,8 @@ export function useUsersMap(): { usersMap: UsersMap; emailToUid: Record<string, 
             photo: u.photo || null,
             email,
             position: u.position || '',
+            fullName: u.fullName || '',
+            mobile: u.mobile || '',
           };
           if (email) emails[email] = d.id;
         });

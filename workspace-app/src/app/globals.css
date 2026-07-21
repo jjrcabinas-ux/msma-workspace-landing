@@ -174,6 +174,7 @@ a{color:inherit;text-decoration:none}
 .mprof-row span{color:var(--dim)}
 .mprof-row b{color:var(--white);text-align:right;overflow-wrap:anywhere}
 .mprof-note{color:var(--dim);font-size:.72rem;padding-top:10px;border-top:1px solid var(--line)}
+.dir-pos{font-size:.68rem;font-weight:700;color:var(--white);background:var(--lime-soft);border-radius:6px;padding:3px 8px;flex:none}
 .mem-error{
   background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);
   font-size:.78rem;border-radius:8px;padding:9px 12px;margin:0 0 16px;max-width:520px;

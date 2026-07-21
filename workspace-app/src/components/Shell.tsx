@@ -10,6 +10,7 @@ import Topbar from '@/components/Topbar';
 import Sidebar, { type BoardKey } from '@/components/Sidebar';
 import Etm from '@/components/Etm';
 import MembersAdmin from '@/components/MembersAdmin';
+import SettingsPage from '@/components/SettingsPage';
 import UsernamePrompt from '@/components/UsernamePrompt';
 import ProfileModal from '@/components/ProfileModal';
 
@@ -42,7 +43,6 @@ const SOON: Partial<Record<BoardKey, { title: string; note: string }>> = {
   books: { title: 'Bookkeeping', note: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
   audit: { title: 'Audit', note: 'This module is being built next — engagement stages across clients will live here.' },
   clients: { title: 'Client Masterlist', note: 'This module is being built next — engagement coverage per client will live here.' },
-  settings: { title: 'Settings', note: 'Workspace settings — user roles, clusters, and module preferences — arrive with the full build.' },
 };
 
 export default function Shell({ user }: { user: User }) {
@@ -179,6 +179,9 @@ export default function Shell({ user }: { user: User }) {
               tab={etmTab}
               onTab={setEtmTab}
             />
+          )}
+          {board === 'settings' && (
+            <SettingsPage isAdmin={isAdmin} myCluster={(myCluster || '').toUpperCase()} usersMap={usersMap} emailToUid={emailToUid} />
           )}
           {board === 'members' &&
             (isAdmin ? (
