@@ -5,17 +5,16 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UsersMap } from '@/lib/types';
 import { CLUSTERS } from '@/lib/types';
-import { fmtShort, todayISO } from '@/lib/dates';
-import { empColor } from '@/lib/ui';
-import Pava from '@/components/Pava';
+import { MON, fmtShort, todayISO } from '@/lib/dates';
 
-// Settings is a list of entries (more arrive later). The first one, the
-// Cluster Directory, opens a standard-format popup: company header, then
-// the cluster, then members categorized by position.
+// Settings is a list of entries (more arrive later). The Cluster Directory
+// popup mirrors the firm's standard printed directory: title band, position
+// bands, and a Name / Nickname / DOB / Mobile / Work Email table, with the
+// cluster's interns as the last section.
 
 const POSITION_ORDER = ['Partner', 'Associate Director', 'Senior Associate', 'Junior Associate'];
 
-type MemberEntry = { email: string; cluster: string };
+type MemberEntry = { email: string; cluster: string; internOf: string };
 
 export default function SettingsPage({
   isAdmin,
@@ -36,7 +35,13 @@ export default function SettingsPage({
       collection(db, 'members'),
       (snap) => {
         const list: MemberEntry[] = [];
-        snap.forEach((d) => list.push({ email: d.id, cluster: ((d.data().cluster as string) || '').toUpperCase() }));
+        snap.forEach((d) =>
+          list.push({
+            email: d.id,
+            cluster: ((d.data().cluster as string) || '').toUpperCase(),
+            internOf: ((d.data().internOf as string) || '').toUpperCase(),
+          })
+        );
         list.sort((a, b) => a.email.localeCompare(b.email));
         setMembers(list);
       },
@@ -44,24 +49,74 @@ export default function SettingsPage({
     );
   }, []);
 
-  const clustersToShow = isAdmin ? [...CLUSTERS] : myCluster ? [myCluster] : [];
+  const clustersToShow = isAdmin ? [...CLUSTERS].filter((c) => c !== 'INTERN') : myCluster ? [myCluster] : [];
 
   const profileOf = (email: string) => {
     const uid = emailToUid[email];
     return uid ? usersMap[uid] : undefined;
   };
 
-  const row = (email: string, idx: number) => {
+  const dobOf = (email: string) => {
+    const b = profileOf(email)?.birthdate;
+    if (!b) return '—';
+    const [, m, d] = b.split('-').map(Number);
+    return `${MON[m - 1]} ${d}`;
+  };
+
+  const trow = (email: string) => {
     const p = profileOf(email);
     const name = p?.fullName || p?.label || email.split('@')[0];
+    const nick = p && p.label && p.label !== name ? p.label : '—';
     return (
-      <div className="snap-row" key={email}>
-        <Pava photo={p?.photo} label={name} color={empColor(idx)} />
-        <div className="snap-body">
-          {name}
-          <div className="gs-sub">
-            {email}
-            {p?.mobile ? ` · ${p.mobile}` : ''}
+      <div className="dirt-row" key={email}>
+        <div className="dirt-name">{name}</div>
+        <div>{nick}</div>
+        <div className="c">{dobOf(email)}</div>
+        <div className="c">{p?.mobile || '—'}</div>
+        <div className="e">{email}</div>
+      </div>
+    );
+  };
+
+  const band = (label: string) => <div className="dirt-band">{label}</div>;
+
+  const clusterSection = (cl: string) => {
+    const inCluster = members.filter((m) => m.cluster === cl);
+    const interns = cl === 'INTERN' ? [] : members.filter((m) => m.cluster === 'INTERN' && (!m.internOf || m.internOf === cl));
+    const grouped = POSITION_ORDER.map((pos) => ({
+      pos,
+      rows: inCluster.filter((m) => profileOf(m.email)?.position === pos),
+    }));
+    const others = inCluster.filter((m) => !POSITION_ORDER.includes(profileOf(m.email)?.position || ''));
+    return (
+      <div key={cl}>
+        <div className="dirt-title">MSMA {cl === 'INTERN' ? 'INTERNS' : `${cl} CLUSTER`} DIRECTORY</div>
+        <div className="dirt-wrap">
+          <div className="dirt-min">
+            <div className="dirt-cols">
+              <div /><div /><div className="c">DOB</div><div className="c">Mobile</div><div className="e">Work Email</div>
+            </div>
+            {!inCluster.length && !interns.length && <div className="empty-note">No members in this cluster yet.</div>}
+            {grouped.map(({ pos, rows }) =>
+              rows.length ? (
+                <div key={pos}>
+                  {band(`${pos.toUpperCase()}${rows.length > 1 ? 'S' : ''}`)}
+                  {rows.map((m) => trow(m.email))}
+                </div>
+              ) : null
+            )}
+            {others.length > 0 && (
+              <div>
+                {band('OTHERS / NOT YET REGISTERED')}
+                {others.map((m) => trow(m.email))}
+              </div>
+            )}
+            {interns.length > 0 && (
+              <div>
+                {band(`INTERN${interns.length > 1 ? 'S' : ''}`)}
+                {interns.map((m) => trow(m.email))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -112,45 +167,7 @@ export default function SettingsPage({
               {!clustersToShow.length && (
                 <div className="empty-note">No cluster assigned yet — ask the administrator to add you in Members.</div>
               )}
-              {clustersToShow.map((cl) => {
-                const inCluster = members.filter((m) => m.cluster === cl);
-                const grouped = POSITION_ORDER.map((pos) => ({
-                  pos,
-                  rows: inCluster.filter((m) => profileOf(m.email)?.position === pos),
-                }));
-                const others = inCluster.filter(
-                  (m) => !POSITION_ORDER.includes(profileOf(m.email)?.position || '') && profileOf(m.email)
-                );
-                const unregistered = inCluster.filter((m) => !profileOf(m.email));
-                return (
-                  <div key={cl}>
-                    <div className="dir-clu">
-                      {cl === 'INTERN' ? 'Interns' : `${cl} Cluster`} · {inCluster.length} member{inCluster.length === 1 ? '' : 's'}
-                    </div>
-                    {!inCluster.length && <div className="empty-note">No members in this cluster yet.</div>}
-                    {grouped.map(({ pos, rows }) =>
-                      rows.length ? (
-                        <div key={pos}>
-                          <div className="gs-group">{pos}{rows.length > 1 ? 's' : ''}</div>
-                          {rows.map((m, i) => row(m.email, i))}
-                        </div>
-                      ) : null
-                    )}
-                    {others.length > 0 && (
-                      <div>
-                        <div className="gs-group">No position set</div>
-                        {others.map((m, i) => row(m.email, i + 1))}
-                      </div>
-                    )}
-                    {unregistered.length > 0 && (
-                      <div>
-                        <div className="gs-group">Not registered yet</div>
-                        {unregistered.map((m, i) => row(m.email, i + 2))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {clustersToShow.map((cl) => clusterSection(cl))}
             </div>
           </div>
         </div>

@@ -45,7 +45,7 @@ export type UserProfile = {
 
 export type UsersMap = Record<
   string,
-  { label: string; photo: string | null; email: string; position: string; fullName: string; mobile: string }
+  { label: string; photo: string | null; email: string; position: string; fullName: string; mobile: string; birthdate: string }
 >;
 
 export const STATUS_LABEL: Record<BoardStatus, string> = {
