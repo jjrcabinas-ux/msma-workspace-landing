@@ -209,9 +209,9 @@ export default function EtmSummary({
         <div className="sum-card">
           <div className="sum-section-title">Task Status — Whole Team</div>
           <div className="stack-bar">
-            {counts.Done > 0 && <div style={{ width: `${pctOf(counts.Done)}%`, background: 'var(--lime)' }} />}
-            {counts.Ongoing > 0 && <div style={{ width: `${pctOf(counts.Ongoing)}%`, background: 'var(--blue)' }} />}
-            {counts.Pending > 0 && <div style={{ width: `${pctOf(counts.Pending)}%`, background: 'var(--amber)' }} />}
+            {counts.Done > 0 && <div style={{ width: `${pctOf(counts.Done)}%`, background: 'var(--lime)', boxShadow: '0 0 10px var(--lime)' }} />}
+            {counts.Ongoing > 0 && <div style={{ width: `${pctOf(counts.Ongoing)}%`, background: 'var(--blue)', boxShadow: '0 0 10px var(--blue)' }} />}
+            {counts.Pending > 0 && <div style={{ width: `${pctOf(counts.Pending)}%`, background: 'var(--amber)', boxShadow: '0 0 10px var(--amber)' }} />}
           </div>
           <div className="legend-row">
             {legend('var(--lime)', 'Done', counts.Done)}
@@ -274,7 +274,7 @@ export default function EtmSummary({
         {per.map((p) => {
           const pc = p.n ? Math.round((p.Done / p.n) * 100) : 0;
           const seg = (n: number, c: string) =>
-            n > 0 ? <div style={{ width: `${(n / (p.n || 1)) * 100}%`, background: c }} /> : null;
+            n > 0 ? <div style={{ width: `${(n / (p.n || 1)) * 100}%`, background: c, boxShadow: `0 0 8px ${c}` }} /> : null;
           return (
             <div className="sum-card" key={p.email}>
               <div className="emp-top">

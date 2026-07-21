@@ -103,9 +103,9 @@ export default function EtmProfile({
 
       <div className="sum-card" style={{ marginBottom: 16 }}>
         <div className="stack-bar" style={{ margin: '0 0 10px' }}>
-          {counts.Done > 0 && <div style={{ width: `${seg(counts.Done)}%`, background: 'var(--lime)' }} />}
-          {counts.Ongoing > 0 && <div style={{ width: `${seg(counts.Ongoing)}%`, background: 'var(--blue)' }} />}
-          {counts.Pending > 0 && <div style={{ width: `${seg(counts.Pending)}%`, background: 'var(--amber)' }} />}
+          {counts.Done > 0 && <div style={{ width: `${seg(counts.Done)}%`, background: 'var(--lime)', boxShadow: '0 0 10px var(--lime)' }} />}
+          {counts.Ongoing > 0 && <div style={{ width: `${seg(counts.Ongoing)}%`, background: 'var(--blue)', boxShadow: '0 0 10px var(--blue)' }} />}
+          {counts.Pending > 0 && <div style={{ width: `${seg(counts.Pending)}%`, background: 'var(--amber)', boxShadow: '0 0 10px var(--amber)' }} />}
         </div>
         <div className="stat-blocks">
           {STAT_CONFIG.map((s) => (
