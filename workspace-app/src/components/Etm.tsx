@@ -251,12 +251,7 @@ export default function Etm({
         )}
         <div className="etm-table">
           <div className="etm-row head">
-            <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div>
-            <div>
-              {editable && (
-                <button className="etm-add-btn" onClick={() => addTask(email)}>＋ Add Task</button>
-              )}
-            </div>
+            <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div><div />
           </div>
           {visible.map(({ t, i }) => {
             // Policy: 3+ days past due and still not Done — members can no
