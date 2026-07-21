@@ -4,12 +4,19 @@ import { useEffect, useRef, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { initialsOf } from '@/lib/ui';
+import type { UsersMap } from '@/lib/types';
+import GlobalSearch from '@/components/GlobalSearch';
+import type { BoardKey } from '@/components/Sidebar';
 
 export default function Topbar({
   myLabel,
   myEmail,
   isAdmin,
   photo,
+  usersMap,
+  emailToUid,
+  onNavigate,
+  onOpenTasks,
   onBurger,
   onOpenProfile,
 }: {
@@ -17,6 +24,10 @@ export default function Topbar({
   myEmail: string;
   isAdmin: boolean;
   photo: string | null;
+  usersMap: UsersMap;
+  emailToUid: Record<string, string>;
+  onNavigate: (board: BoardKey) => void;
+  onOpenTasks: (clusterUpper: string) => void;
   onBurger: () => void;
   onOpenProfile: () => void;
 }) {
@@ -37,6 +48,7 @@ export default function Topbar({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="MSMA logo" /> MSMA Workspace
       </a>
+      <GlobalSearch usersMap={usersMap} emailToUid={emailToUid} onNavigate={onNavigate} onOpenTasks={onOpenTasks} />
       <div className="tb-right">
         <button className="tb-icon" title="Notifications" aria-label="Notifications">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

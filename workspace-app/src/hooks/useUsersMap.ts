@@ -23,6 +23,7 @@ export function useUsersMap(): { usersMap: UsersMap; emailToUid: Record<string, 
             label: u.username || u.fullName || u.email || d.id.slice(0, 6),
             photo: u.photo || null,
             email,
+            position: u.position || '',
           };
           if (email) emails[email] = d.id;
         });

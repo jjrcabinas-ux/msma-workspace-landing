@@ -41,6 +41,23 @@ a{color:inherit;text-decoration:none}
 }
 .tb-brand{display:flex;align-items:flex-end;gap:8px;font-weight:700;font-size:.95rem;letter-spacing:-.02em;white-space:nowrap;line-height:1.05}
 .tb-brand img{height:24px;width:auto;display:block}
+.tb-search{
+  position:relative;flex:1;max-width:680px;margin:0 auto;display:flex;align-items:center;gap:8px;
+  background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--dim);
+}
+.tb-search input{flex:1;background:none;border:none;outline:none;color:var(--white);font-family:inherit;font-size:.85rem}
+.tb-search:focus-within{border-color:var(--line-strong)}
+.gs-panel{
+  position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--card);
+  border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.55);
+  max-height:70vh;overflow-y:auto;padding:8px;z-index:60;transform-origin:top center;animation:drop-open .18s ease;
+}
+.gs-group{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:8px 10px 4px}
+.gs-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:8px;font-size:.82rem;color:var(--grey)}
+.gs-row:hover{background:var(--card-2);color:var(--white)}
+.gs-body{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-sub{color:var(--dim);font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-empty{padding:14px;color:var(--dim);font-size:.8rem;text-align:center}
 .tb-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 .tb-icon{
   width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--grey);font-size:1rem;
@@ -328,6 +345,7 @@ a{color:inherit;text-decoration:none}
   .grow>div:nth-child(2){display:none}
   .grow.head>div:nth-child(2){display:none}
   .main{padding:16px 14px 60px}
+  .tb-search{display:none}
   .etm-search input{width:110px}
   .two-col{grid-template-columns:1fr}
   .kpi-ring-card{grid-column:1 / -1}

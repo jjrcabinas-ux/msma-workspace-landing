@@ -82,6 +82,13 @@ export default function Shell({ user }: { user: User }) {
         myEmail={myEmail}
         isAdmin={isAdmin}
         photo={myPhoto}
+        usersMap={usersMap}
+        emailToUid={emailToUid}
+        onNavigate={(b) => pickBoard(b)}
+        onOpenTasks={(clusterUpper) => {
+          if (isAdmin && clusterUpper) pickBoard('tasks', clusterUpper.toLowerCase());
+          else pickBoard('tasks');
+        }}
         onBurger={() => setSidebarOpen((v) => !v)}
         onOpenProfile={() => {
           getDoc(doc(db, 'users', user.uid))

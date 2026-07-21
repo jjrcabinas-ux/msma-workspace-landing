@@ -42,7 +42,7 @@ export type UserProfile = {
   profileComplete?: boolean;
 };
 
-export type UsersMap = Record<string, { label: string; photo: string | null; email: string }>;
+export type UsersMap = Record<string, { label: string; photo: string | null; email: string; position: string }>;
 
 export const STATUS_LABEL: Record<BoardStatus, string> = {
   done: 'Done',
