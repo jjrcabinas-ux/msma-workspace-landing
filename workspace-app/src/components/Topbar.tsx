@@ -8,7 +8,8 @@ import type { UsersMap } from '@/lib/types';
 import GlobalSearch from '@/components/GlobalSearch';
 import type { BoardKey } from '@/components/Sidebar';
 
-export type Notif = { id: string; title: string; sub: string; dest: 'summary' | 'mine' | 'sheets' | 'calendar' | 'interns' };
+// dest 'none' = a general reminder with no tab to open; tapping it dismisses it.
+export type Notif = { id: string; title: string; sub: string; dest: 'summary' | 'mine' | 'sheets' | 'calendar' | 'interns' | 'none' };
 
 export default function Topbar({
   myLabel,
@@ -30,7 +31,7 @@ export default function Topbar({
   isAdmin: boolean;
   photo: string | null;
   notifs: Notif[];
-  onNotifClick: (dest: Notif['dest']) => void;
+  onNotifClick: (n: Notif) => void;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
   onNavigate: (board: BoardKey) => void;
@@ -114,7 +115,7 @@ export default function Topbar({
               className="notif-item"
               onClick={() => {
                 setNotifOpen(false);
-                onNotifClick(n.dest);
+                onNotifClick(n);
               }}
             >
               <span className="notif-dot" />

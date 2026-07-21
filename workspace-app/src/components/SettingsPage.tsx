@@ -11,6 +11,7 @@ import DatePicker from '@/components/DatePicker';
 import Select from '@/components/Select';
 
 const DEST_OPTIONS = [
+  { label: 'General — disappears once tapped', value: 'none' },
   { label: 'My Deliverables', value: 'mine' },
   { label: 'Team Summary', value: 'summary' },
   { label: 'Calendar', value: 'calendar' },
@@ -20,8 +21,15 @@ const TYPE_OPTIONS = [
   { label: 'Show to everyone', value: 'general' },
   { label: 'Hide for members done encoding this week', value: 'weekly-encode' },
 ];
+const SEND_TO_OPTIONS = [
+  { label: 'All clusters', value: 'ALL' },
+  { label: 'RPM Cluster only', value: 'RPM' },
+  { label: 'VCM Cluster only', value: 'VCM' },
+  { label: 'ADS Cluster only', value: 'ADS' },
+  { label: 'Interns only', value: 'INTERN' },
+];
 
-type Announcement = { id: string; title: string; sub: string; dest: string; type: string; expires: string };
+type Announcement = { id: string; title: string; sub: string; dest: string; type: string; expires: string; cluster: string };
 
 // Settings is a list of entries (more arrive later). The Cluster Directory
 // popup mirrors the firm's standard printed directory: title band, position
@@ -49,7 +57,8 @@ export default function SettingsPage({
   const [anns, setAnns] = useState<Announcement[]>([]);
   const [annTitle, setAnnTitle] = useState('');
   const [annSub, setAnnSub] = useState('');
-  const [annDest, setAnnDest] = useState('mine');
+  const [annDest, setAnnDest] = useState('none');
+  const [annCluster, setAnnCluster] = useState('ALL');
   const [annType, setAnnType] = useState('general');
   const [annExpires, setAnnExpires] = useState(weekRange(todayISO()).end);
   const [annError, setAnnError] = useState('');
@@ -70,6 +79,7 @@ export default function SettingsPage({
             dest: (v.dest as string) || 'mine',
             type: (v.type as string) || 'general',
             expires: (v.expires as string) || '',
+            cluster: ((v.cluster as string) || 'ALL').toUpperCase(),
           });
         });
         list.sort((a, b) => b.expires.localeCompare(a.expires));
@@ -97,6 +107,7 @@ export default function SettingsPage({
         dest: annDest,
         type: annType,
         expires: annExpires,
+        cluster: annCluster,
         createdAt: serverTimestamp(),
       });
       setAnnTitle('');
@@ -241,7 +252,10 @@ export default function SettingsPage({
         >
           <div className="uname-card prof-card" role="dialog" aria-modal="true" aria-labelledby="ann-title">
             <h3 id="ann-title">Send Announcement</h3>
-            <p>Shows in every member’s notification bell until it expires; tapping it opens the destination tab.</p>
+            <p>
+              Shows in the notification bell until it expires. Tapping opens the destination tab —
+              or, for a <b>General</b> reminder, simply dismisses it for that member.
+            </p>
             <div className="prof-grid">
               <div className="prof-field full">
                 <label htmlFor="ann-t">Title</label>
@@ -256,7 +270,7 @@ export default function SettingsPage({
               <div className="prof-field">
                 <label>Destination</label>
                 <Select
-                  value={DEST_OPTIONS.find((o) => o.value === annDest)?.label || 'My Deliverables'}
+                  value={DEST_OPTIONS.find((o) => o.value === annDest)?.label || DEST_OPTIONS[0].label}
                   options={DEST_OPTIONS.map((o) => o.label)}
                   ariaLabel="Announcement destination"
                   onChange={(label) => {
@@ -266,12 +280,24 @@ export default function SettingsPage({
                 />
               </div>
               <div className="prof-field">
+                <label>Send to</label>
+                <Select
+                  value={SEND_TO_OPTIONS.find((o) => o.value === annCluster)?.label || SEND_TO_OPTIONS[0].label}
+                  options={SEND_TO_OPTIONS.map((o) => o.label)}
+                  ariaLabel="Announcement audience"
+                  onChange={(label) => {
+                    const hit = SEND_TO_OPTIONS.find((o) => o.label === label);
+                    if (hit) setAnnCluster(hit.value);
+                  }}
+                />
+              </div>
+              <div className="prof-field">
                 <label>Expires</label>
                 <div className="mem-input">
                   <DatePicker value={annExpires} ariaLabel="Announcement expiry" onChange={setAnnExpires} />
                 </div>
               </div>
-              <div className="prof-field full">
+              <div className="prof-field">
                 <label>Behavior</label>
                 <Select
                   value={TYPE_OPTIONS.find((o) => o.value === annType)?.label || TYPE_OPTIONS[0].label}
@@ -288,10 +314,12 @@ export default function SettingsPage({
               <div className="mem-error" role="alert" style={{ margin: '12px 0 0' }}>{annError}</div>
             )}
             {annSent && (
-              <div className="ann-sent" role="status">Sent! It’s now live in everyone’s bell.</div>
+              <div className="ann-sent" role="status">Sent! It’s now live in the bell.</div>
             )}
             <div className="uname-actions">
-              <button className="tool-new" onClick={sendAnnouncement}>Send to everyone</button>
+              <button className="tool-new" onClick={sendAnnouncement}>
+                {annCluster === 'ALL' ? 'Send to everyone' : `Send to ${SEND_TO_OPTIONS.find((o) => o.value === annCluster)?.label.replace(' only', '')}`}
+              </button>
               <button className="uname-skip" onClick={() => setAnnOpen(false)}>Close</button>
             </div>
             {anns.length > 0 && (
@@ -305,6 +333,8 @@ export default function SettingsPage({
                         {a.title}
                         <span className="ann-sub">
                           {active ? `until ${fmtShort(a.expires)}` : 'expired'}
+                          {a.cluster !== 'ALL' ? ` · ${a.cluster === 'INTERN' ? 'interns' : a.cluster} only` : ''}
+                          {a.dest === 'none' ? ' · general (tap to dismiss)' : ''}
                           {a.type === 'weekly-encode' ? ' · hides when encoded' : ''}
                         </span>
                       </div>

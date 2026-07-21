@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { arrayUnion, collection, doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db, isAdminEmail } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { daysBetween, todayISO, weekRange } from '@/lib/dates';
 import { useMyTasks } from '@/hooks/useMyTasks';
 import { useMyWfh } from '@/hooks/useMyWfh';
 import { useUsersMap } from '@/hooks/useUsersMap';
-import Topbar from '@/components/Topbar';
+import Topbar, { type Notif } from '@/components/Topbar';
 import Sidebar, { type BoardKey } from '@/components/Sidebar';
 import ClientMasterlist from '@/components/ClientMasterlist';
 import Etm from '@/components/Etm';
@@ -138,8 +138,10 @@ export default function Shell({ user }: { user: User }) {
   const myWfh = useMyWfh(personal ? myEmail : '');
 
   // Admin-sent broadcasts (announcements collection). weekly-encode ones
-  // hide themselves for users who already encoded this week.
-  type Ann = { id: string; title: string; sub: string; dest: EtmTab; type: string; expires: string };
+  // hide themselves for users who already encoded this week. cluster limits
+  // who sees it ('ALL' = everyone); dest 'none' = a general reminder that a
+  // member dismisses for themselves by tapping it.
+  type Ann = { id: string; title: string; sub: string; dest: Notif['dest']; type: string; expires: string; cluster: string };
   const [anns, setAnns] = useState<Ann[]>([]);
   useEffect(() => {
     return onSnapshot(
@@ -152,9 +154,10 @@ export default function Shell({ user }: { user: User }) {
             id: d.id,
             title: (v.title as string) || '',
             sub: (v.sub as string) || '',
-            dest: ((v.dest as string) || 'mine') as EtmTab,
+            dest: ((v.dest as string) || 'mine') as Notif['dest'],
             type: (v.type as string) || 'general',
             expires: (v.expires as string) || '9999-12-31',
+            cluster: ((v.cluster as string) || 'ALL').toUpperCase(),
           });
         });
         setAnns(list);
@@ -163,20 +166,36 @@ export default function Shell({ user }: { user: User }) {
     );
   }, []);
 
+  // General reminders each member has already tapped away (per user).
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  useEffect(() => {
+    return onSnapshot(
+      doc(db, 'users', user.uid),
+      (snap) => setDismissed((snap.exists() && (snap.data().dismissedAnns as string[])) || []),
+      () => {}
+    );
+  }, [user.uid]);
+
   const notifs = useMemo(() => {
     const today0 = todayISO();
     const wk0 = weekRange(today0);
     const hasThisWeek0 = myTasks.some((t) => t.date >= wk0.start && t.date <= wk0.end);
-    const annList = anns
+    const myClusterUp = (myCluster || '').toUpperCase();
+    // Admin sees every announcement; a member sees the ones for everyone or
+    // for their own cluster, minus general reminders they already tapped.
+    const visible = anns
       .filter((a) => a.title && a.expires >= today0)
+      .filter((a) => !personal || a.cluster === 'ALL' || a.cluster === myClusterUp)
+      .filter((a) => !(a.dest === 'none' && dismissed.includes(a.id)));
+    const annList = visible
       .filter((a) => a.type !== 'weekly-encode' || (personal && !hasThisWeek0))
       .map((a) => ({ id: `ann-${a.id}`, title: a.title, sub: a.sub, dest: a.dest }));
     if (!personal) return annList.slice(0, 8);
     const today = today0;
     const wk = wk0;
-    const list: { id: string; title: string; sub: string; dest: EtmTab }[] = [...annList];
+    const list: Notif[] = [...annList];
     const hasThisWeek = hasThisWeek0;
-    const hasWeeklyAnn = anns.some((a) => a.type === 'weekly-encode' && a.expires >= today0);
+    const hasWeeklyAnn = visible.some((a) => a.type === 'weekly-encode');
     if (!hasThisWeek && !hasWeeklyAnn) {
       list.push({
         id: 'week',
@@ -211,7 +230,7 @@ export default function Shell({ user }: { user: User }) {
         });
       });
     return list.slice(0, 8);
-  }, [personal, myTasks, myWfh, anns]);
+  }, [personal, myTasks, myWfh, anns, myCluster, dismissed]);
 
   const openTaskTab = useCallback((dest: EtmTab) => {
     setBoard('tasks');
@@ -219,6 +238,19 @@ export default function Shell({ user }: { user: User }) {
     setEtmTab(dest);
     setSidebarOpen(false);
   }, []);
+
+  // Tapping a general reminder dismisses it for this user only; the other
+  // notifications open their destination tab as before.
+  const handleNotifClick = useCallback(
+    (n: Notif) => {
+      if (n.dest === 'none') {
+        setDoc(doc(db, 'users', user.uid), { dismissedAnns: arrayUnion(n.id.replace(/^ann-/, '')) }, { merge: true }).catch(() => {});
+        return;
+      }
+      openTaskTab(n.dest);
+    },
+    [user.uid, openTaskTab]
+  );
 
   const pickBoard = useCallback((b: BoardKey, cluster?: string) => {
     setBoard(b);
@@ -244,7 +276,7 @@ export default function Shell({ user }: { user: User }) {
         isAdmin={isAdmin}
         photo={myPhoto}
         notifs={notifs}
-        onNotifClick={openTaskTab}
+        onNotifClick={handleNotifClick}
         usersMap={usersMap}
         emailToUid={emailToUid}
         onNavigate={(b) => pickBoard(b)}
