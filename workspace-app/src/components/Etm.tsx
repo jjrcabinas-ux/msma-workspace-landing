@@ -10,6 +10,7 @@ import type { BirFiling } from '@/lib/birCalendar';
 import Pava from '@/components/Pava';
 import DatePicker from '@/components/DatePicker';
 import EtmCalendar from '@/components/EtmCalendar';
+import EtmProfile from '@/components/EtmProfile';
 import EtmSummary from '@/components/EtmSummary';
 
 const STATUS_CYCLE: SheetStatus[] = ['Pending', 'Ongoing', 'Done'];
@@ -91,6 +92,20 @@ export default function Etm({
     return (uid && usersMap[uid]?.label) || email.split('@')[0];
   };
 
+  function addTask(email: string) {
+    persist(email, [
+      ...(sheets[email] || []),
+      { id: newTaskId(), date: todayISO(), task: '', details: '', due: '', status: 'Pending', help: '' },
+    ]);
+  }
+
+  const rankOf = (email: string) => {
+    const dones = roster
+      .map((e) => ({ e, d: (sheets[e] || []).filter((t) => t.status === 'Done').length }))
+      .sort((a, b) => b.d - a.d);
+    return dones.findIndex((x) => x.e === email) + 1;
+  };
+
   // Calendar → sheet: a filing becomes a Pending task due on its BIR date.
   // Members can only assign to themselves; admin can assign to anyone.
   const assignees = (isAdmin ? roster : roster.filter((e) => e === myEmail)).map((email) => ({
@@ -144,7 +159,7 @@ export default function Etm({
 
   const q = search.trim().toLowerCase();
 
-  const sheetFor = (email: string, idx: number) => {
+  const sheetFor = (email: string, idx: number, showHead = true) => {
     const uid = emailToUid[email];
     const label = labelOf(email);
     const allTasks = sheets[email] || [];
@@ -156,15 +171,17 @@ export default function Etm({
       : allTasks.map((t, i) => ({ t, i }));
     return (
       <div className="etm-emp" key={email}>
-        <div className="etm-emp-head">
-          <Pava photo={uid ? usersMap[uid]?.photo : null} label={label} color={empColor(idx)} />
-          <div>
-            <div className="etm-emp-name">{label}</div>
-            <div className="etm-emp-sub">
-              {email} · {allTasks.length} task{allTasks.length === 1 ? '' : 's'}
+        {showHead && (
+          <div className="etm-emp-head">
+            <Pava photo={uid ? usersMap[uid]?.photo : null} label={label} color={empColor(idx)} />
+            <div>
+              <div className="etm-emp-name">{label}</div>
+              <div className="etm-emp-sub">
+                {email} · {allTasks.length} task{allTasks.length === 1 ? '' : 's'}
+              </div>
             </div>
           </div>
-        </div>
+        )}
         <div className="etm-table">
           <div className="etm-row head">
             <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div><div />
@@ -215,13 +232,7 @@ export default function Etm({
             </div>
           ))}
           {editable && (
-            <div className="etm-add"
-              onClick={() =>
-                persist(email, [
-                  ...(sheets[email] || []),
-                  { id: newTaskId(), date: todayISO(), task: '', details: '', due: '', status: 'Pending', help: '' },
-                ])
-              }>
+            <div className="etm-add" onClick={() => addTask(email)}>
               ＋ Add task…
             </div>
           )}
@@ -267,7 +278,17 @@ export default function Etm({
         <>
           <div style={{ height: 16 }} />
           {roster.includes(myEmail) ? (
-            sheetFor(myEmail, roster.indexOf(myEmail))
+            <>
+              <EtmProfile
+                label={labelOf(myEmail)}
+                email={myEmail}
+                photo={(emailToUid[myEmail] && usersMap[emailToUid[myEmail]]?.photo) || null}
+                tasks={sheets[myEmail] || []}
+                rank={rankOf(myEmail)}
+                onAddTask={() => addTask(myEmail)}
+              />
+              {sheetFor(myEmail, roster.indexOf(myEmail), false)}
+            </>
           ) : (
             <div className="soonboard">
               <b>No sheet of yours here</b>Your account isn’t a member of the {cluster}
