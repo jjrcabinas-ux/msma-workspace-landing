@@ -37,11 +37,15 @@ export default function GlobalSearch({
   emailToUid,
   onNavigate,
   onOpenTasks,
+  onOpenTab,
+  onOpenProfile,
 }: {
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
   onNavigate: (board: BoardKey) => void;
   onOpenTasks: (clusterUpper: string) => void;
+  onOpenTab: (tab: 'summary' | 'mine' | 'calendar' | 'interns') => void;
+  onOpenProfile: () => void;
 }) {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
@@ -89,6 +93,12 @@ export default function GlobalSearch({
       setHits([]);
     }
   }
+
+  // Preload so suggestions appear from the very first keystroke.
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -138,7 +148,23 @@ export default function GlobalSearch({
       .filter((f) => `${f.code} ${f.label}`.toLowerCase().includes(query))
       .filter((f) => f.dueDate >= today)
       .slice(0, 6);
-    const nav = NAV_ITEMS.filter((n) => n.label.toLowerCase().includes(query));
+    // Everything reachable in the workspace is suggestible.
+    const gotos: { label: string; kw: string; run: () => void }[] = [
+      ...NAV_ITEMS.map((n) => ({ label: n.label, kw: n.label.toLowerCase(), run: () => onNavigate(n.board) })),
+      { label: 'My Deliverables', kw: 'my deliverables encode add task sheet', run: () => onOpenTab('mine') },
+      { label: 'Team Summary', kw: 'team summary kpi leaderboard workload blockers snapshot completion', run: () => onOpenTab('summary') },
+      { label: 'BIR Tax Calendar', kw: 'bir tax calendar deadline filing due', run: () => onOpenTab('calendar') },
+      { label: 'Work From Home Schedule', kw: 'wfh work from home schedule onsite', run: () => onOpenTab('calendar') },
+      { label: 'Intern tab', kw: 'intern interns monitoring', run: () => onOpenTab('interns') },
+      { label: 'Cluster Directory', kw: 'cluster directory contacts mobile birthday dob email', run: () => onNavigate('settings') },
+      { label: 'Send Announcement', kw: 'send announcement broadcast reminder bell', run: () => onNavigate('settings') },
+      { label: 'My profile', kw: 'profile photo username position birthdate mobile', run: () => onOpenProfile() },
+      { label: 'RPM Cluster — Task Monitoring', kw: 'rpm cluster', run: () => onOpenTasks('RPM') },
+      { label: 'ADS Cluster — Task Monitoring', kw: 'ads cluster', run: () => onOpenTasks('ADS') },
+      { label: 'VCM Cluster — Task Monitoring', kw: 'vcm cluster', run: () => onOpenTasks('VCM') },
+      { label: 'Interns — Task Monitoring', kw: 'intern interns group', run: () => onOpenTasks('INTERN') },
+    ];
+    const nav = gotos.filter((g) => `${g.label} ${g.kw}`.toLowerCase().includes(query)).slice(0, 6);
     return { tasks, people, filings, nav };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, hits, usersMap]);
@@ -235,15 +261,15 @@ export default function GlobalSearch({
                   <div className="gs-group">Go to</div>
                   {results.nav.map((n) => (
                     <button
-                      key={n.board}
+                      key={n.label}
                       className="gs-row"
                       onClick={() => {
                         setOpen(false);
-                        onNavigate(n.board);
+                        n.run();
                       }}
                     >
                       <div className="gs-body">{n.label}</div>
-                      <span className="gs-sub">module</span>
+                      <span className="gs-sub">go</span>
                     </button>
                   ))}
                 </>

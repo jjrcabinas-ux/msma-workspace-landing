@@ -21,6 +21,7 @@ export default function Topbar({
   emailToUid,
   onNavigate,
   onOpenTasks,
+  onOpenTab,
   onBurger,
   onOpenProfile,
 }: {
@@ -34,6 +35,7 @@ export default function Topbar({
   emailToUid: Record<string, string>;
   onNavigate: (board: BoardKey) => void;
   onOpenTasks: (clusterUpper: string) => void;
+  onOpenTab: (tab: 'summary' | 'mine' | 'calendar' | 'interns') => void;
   onBurger: () => void;
   onOpenProfile: () => void;
 }) {
@@ -58,7 +60,14 @@ export default function Topbar({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="MSMA logo" /> MSMA Workspace
       </a>
-      <GlobalSearch usersMap={usersMap} emailToUid={emailToUid} onNavigate={onNavigate} onOpenTasks={onOpenTasks} />
+      <GlobalSearch
+        usersMap={usersMap}
+        emailToUid={emailToUid}
+        onNavigate={onNavigate}
+        onOpenTasks={onOpenTasks}
+        onOpenTab={onOpenTab}
+        onOpenProfile={onOpenProfile}
+      />
       <div className="tb-right">
         <button
           className="tb-icon tb-bell"

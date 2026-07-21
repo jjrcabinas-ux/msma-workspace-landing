@@ -252,6 +252,7 @@ export default function Shell({ user }: { user: User }) {
           if (isAdmin && clusterUpper) pickBoard('tasks', clusterUpper.toLowerCase());
           else pickBoard('tasks');
         }}
+        onOpenTab={openTaskTab}
         onBurger={() => setSidebarOpen((v) => !v)}
         onOpenProfile={() => {
           getDoc(doc(db, 'users', user.uid))
