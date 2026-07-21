@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { POSITIONS } from '@/lib/types';
 import { initialsOf, resizePhotoToDataUrl } from '@/lib/ui';
+import DatePicker from '@/components/DatePicker';
 import Select from '@/components/Select';
 
 export default function ProfileModal({
@@ -101,8 +102,10 @@ export default function ProfileModal({
             <input id="prof-email" className="mem-input" type="email" inputMode="email" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="prof-field">
-            <label htmlFor="prof-bday">Birthdate</label>
-            <input id="prof-bday" className="mem-input" type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
+            <label>Birthdate</label>
+            <div className="mem-input">
+              <DatePicker value={birthdate} ariaLabel="Birthdate" onChange={setBirthdate} />
+            </div>
           </div>
           <div className="prof-field">
             <label htmlFor="prof-mobile">Mobile number</label>
