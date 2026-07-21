@@ -243,7 +243,8 @@ a{color:inherit;text-decoration:none}
 .kpi-card:hover{border-color:var(--line-strong)}
 .kpi-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .kpi-number{font-size:1.7rem;font-weight:700;margin-top:6px}
-.kpi-ring-card{display:flex;align-items:center;gap:14px}
+.kpi-ring-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-width:0}
+.kpi-ring-card>div:last-child{min-width:0}
 .ring-wrap{position:relative;width:74px;height:74px;flex:none}
 .ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring-label{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:.9rem}
@@ -329,6 +330,7 @@ a{color:inherit;text-decoration:none}
   .main{padding:16px 14px 60px}
   .etm-search input{width:110px}
   .two-col{grid-template-columns:1fr}
+  .kpi-ring-card{grid-column:1 / -1}
   .etm-row{grid-template-columns:minmax(120px,1fr) 96px 96px 30px}
   .etm-row>div:nth-child(1),.etm-row>div:nth-child(3),.etm-row>div:nth-child(6){display:none}
 }
