@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
-import { todayISO } from '@/lib/dates';
+import { daysBetween, todayISO } from '@/lib/dates';
+import ListModal from '@/components/ListModal';
 import { empColor, newTaskId } from '@/lib/ui';
 import type { BirFiling } from '@/lib/birCalendar';
 import Pava from '@/components/Pava';
@@ -43,6 +44,7 @@ export default function Etm({
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
   const [addFor, setAddFor] = useState<string | null>(null); // email the add popup targets
+  const [lockNotice, setLockNotice] = useState<string | null>(null); // task name whose status is locked
 
   useEffect(() => {
     setRoster([]);
@@ -191,7 +193,12 @@ export default function Etm({
               )}
             </div>
           </div>
-          {visible.map(({ t, i }) => (
+          {visible.map(({ t, i }) => {
+            // Policy: 3+ days past due and still not Done — members can no
+            // longer change the status; the supervisor (admin) updates it.
+            const locked =
+              editable && !isAdmin && !!t.due && t.status !== 'Done' && daysBetween(t.due, todayISO()) >= 3;
+            return (
             <div
               className="etm-row"
               key={`${t.id}|${t.date}|${t.task}|${t.details}|${t.due}|${t.status}|${t.help}`}
@@ -213,9 +220,20 @@ export default function Etm({
                   onChange={(iso) => mutate(email, i, { due: iso })} />
               </div>
               <div>
-                <button className="etm-status" data-s={t.status} title="Click to change status" disabled={!editable}
-                  onClick={() => mutate(email, i, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length] })}>
-                  {t.status}
+                <button
+                  className="etm-status"
+                  data-s={t.status}
+                  title={locked ? 'Status locked — 3+ days past due. Ask your supervisor.' : 'Click to change status'}
+                  disabled={!editable}
+                  onClick={() => {
+                    if (locked) {
+                      setLockNotice(t.task || '(untitled)');
+                      return;
+                    }
+                    mutate(email, i, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length] });
+                  }}
+                >
+                  {locked ? '🔒 ' : ''}{t.status}
                 </button>
               </div>
               <div>
@@ -235,7 +253,8 @@ export default function Etm({
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -305,6 +324,16 @@ export default function Etm({
             setAddFor(null);
           }}
         />
+      )}
+      {lockNotice !== null && (
+        <ListModal title="Status locked" onClose={() => setLockNotice(null)}>
+          <div style={{ padding: '4px 2px 8px', fontSize: '.85rem', color: 'var(--grey)', lineHeight: 1.6 }}>
+            <b style={{ color: 'var(--white)' }}>{lockNotice}</b> is 3 or more days past its due date without being
+            marked Done, so its status can no longer be changed from here. Please coordinate with your{' '}
+            <b style={{ color: 'var(--white)' }}>direct supervisor</b> — the workspace admin can update the status for
+            you.
+          </div>
+        </ListModal>
       )}
     </>
   );

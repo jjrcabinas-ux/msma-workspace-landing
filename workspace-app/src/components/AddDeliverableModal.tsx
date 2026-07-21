@@ -19,13 +19,46 @@ export default function AddDeliverableModal({
   const [details, setDetails] = useState('');
   const [help, setHelp] = useState('');
   const [error, setError] = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   function save() {
     if (!task.trim()) {
       setError('Please describe the task.');
       return;
     }
-    onAdd({ date, due, task: task.trim(), details: details.trim(), status: 'Pending', help: help.trim() });
+    setError('');
+    setConfirming(true);
+  }
+
+  if (confirming) {
+    return (
+      <div
+        className="uname-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setConfirming(false);
+        }}
+      >
+        <div className="uname-card" role="dialog" aria-modal="true" aria-labelledby="addt-remind">
+          <h3 id="addt-remind">One reminder before saving</h3>
+          <p>
+            If this deliverable goes <b style={{ color: 'var(--white)' }}>3 or more days past its due date</b> without
+            being marked Done, you won’t be able to change its status yourself anymore. You’ll need to coordinate with
+            your <b style={{ color: 'var(--white)' }}>direct supervisor</b>, who can update the status for you.
+          </p>
+          <div className="uname-actions">
+            <button
+              className="tool-new"
+              onClick={() =>
+                onAdd({ date, due, task: task.trim(), details: details.trim(), status: 'Pending', help: help.trim() })
+              }
+            >
+              I understand — add it
+            </button>
+            <button className="uname-skip" onClick={() => setConfirming(false)}>Go back</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
