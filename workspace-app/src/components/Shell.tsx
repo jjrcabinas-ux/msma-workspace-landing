@@ -7,6 +7,7 @@ import { db, isAdminEmail } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { daysBetween, todayISO, weekRange } from '@/lib/dates';
 import { useMyTasks } from '@/hooks/useMyTasks';
+import { useMyWfh } from '@/hooks/useMyWfh';
 import { useUsersMap } from '@/hooks/useUsersMap';
 import Topbar from '@/components/Topbar';
 import Sidebar, { type BoardKey } from '@/components/Sidebar';
@@ -132,22 +133,35 @@ export default function Shell({ user }: { user: User }) {
   // their own the moment the user acts (adds a deliverable / marks Done).
   const inRegistry = !isAdmin || (myCluster || '') !== '';
   const myTasks = useMyTasks(inRegistry ? myEmail : '');
+  const myWfh = useMyWfh(inRegistry ? myEmail : '');
   const notifs = useMemo(() => {
     if (!inRegistry) return [];
     const today = todayISO();
     const wk = weekRange(today);
-    const list: { id: string; title: string; sub: string }[] = [];
+    const list: { id: string; title: string; sub: string; dest: EtmTab }[] = [];
     const hasThisWeek = myTasks.some((t) => t.date >= wk.start && t.date <= wk.end);
     if (!hasThisWeek) {
       list.push({
         id: 'week',
         title: 'No deliverables encoded for this week yet',
         sub: 'Add what you’re working on — tap to open My Deliverables.',
+        dest: 'mine',
+      });
+    }
+    const hasWfhThisWeek = myWfh.some((d) => d >= wk.start && d <= wk.end);
+    if (!hasWfhThisWeek) {
+      list.push({
+        id: 'wfh',
+        title: 'Update your Work From Home schedule',
+        sub: 'No WFH dates marked this week — tap to open the calendar.',
+        dest: 'calendar',
       });
     }
     myTasks
       .filter((t) => t.status !== 'Done' && t.due === today)
-      .forEach((t) => list.push({ id: `due-${t.id}`, title: `“${t.task || '(untitled)'}” is due today`, sub: 'Tap to update its status.' }));
+      .forEach((t) =>
+        list.push({ id: `due-${t.id}`, title: `“${t.task || '(untitled)'}” is due today`, sub: 'Tap to update its status.', dest: 'mine' })
+      );
     myTasks
       .filter((t) => t.status !== 'Done' && t.due && t.due < today)
       .forEach((t) => {
@@ -156,15 +170,16 @@ export default function Shell({ user }: { user: User }) {
           id: `over-${t.id}`,
           title: `“${t.task || '(untitled)'}” is ${n} day${n === 1 ? '' : 's'} overdue`,
           sub: n >= 3 ? 'Status is locked — coordinate with your supervisor.' : 'Tap to update its status.',
+          dest: 'mine',
         });
       });
     return list.slice(0, 8);
-  }, [inRegistry, myTasks]);
+  }, [inRegistry, myTasks, myWfh]);
 
-  const openMyDeliverables = useCallback(() => {
+  const openTaskTab = useCallback((dest: EtmTab) => {
     setBoard('tasks');
     setEtmCluster(null);
-    setEtmTab('mine');
+    setEtmTab(dest);
     setSidebarOpen(false);
   }, []);
 
@@ -192,7 +207,7 @@ export default function Shell({ user }: { user: User }) {
         isAdmin={isAdmin}
         photo={myPhoto}
         notifs={notifs}
-        onNotifClick={openMyDeliverables}
+        onNotifClick={openTaskTab}
         usersMap={usersMap}
         emailToUid={emailToUid}
         onNavigate={(b) => pickBoard(b)}
