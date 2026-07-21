@@ -25,6 +25,8 @@ export default function Etm({
   myEmail,
   usersMap,
   emailToUid,
+  tab,
+  onTab,
 }: {
   cluster: string; // uppercase, '' when none picked/assigned
   clusterKnown: boolean;
@@ -32,8 +34,9 @@ export default function Etm({
   myEmail: string;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
+  tab: 'summary' | 'mine' | 'calendar';
+  onTab: (t: 'summary' | 'mine' | 'calendar') => void;
 }) {
-  const [tab, setTab] = useState<'summary' | 'mine' | 'calendar'>('summary');
   const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
@@ -109,7 +112,7 @@ export default function Etm({
         help: '',
       },
     ]);
-    setTab(email === myEmail ? 'mine' : 'summary');
+    onTab(email === myEmail ? 'mine' : 'summary');
   }
 
   const head = (
@@ -231,9 +234,9 @@ export default function Etm({
     <>
       {head}
       <div className="board-tabs">
-        <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => setTab('summary')}>Team Summary</div>
-        <div className={`btab${tab === 'mine' ? ' on' : ''}`} onClick={() => setTab('mine')}>My Deliverables</div>
-        <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => setTab('calendar')}>Calendar</div>
+        <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => onTab('summary')}>Team Summary</div>
+        <div className={`btab${tab === 'mine' ? ' on' : ''}`} onClick={() => onTab('mine')}>My Deliverables</div>
+        <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => onTab('calendar')}>Calendar</div>
         {tab === 'mine' && (
           <div className="etm-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">

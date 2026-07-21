@@ -13,6 +13,27 @@ import MembersAdmin from '@/components/MembersAdmin';
 import UsernamePrompt from '@/components/UsernamePrompt';
 import ProfileModal from '@/components/ProfileModal';
 
+export type EtmTab = 'summary' | 'mine' | 'calendar';
+
+const BOARD_KEYS: BoardKey[] = ['dashboard', 'tasks', 'tax', 'books', 'audit', 'clients', 'members', 'settings'];
+const CLUSTER_SLUGS = ['rpm', 'ads', 'vcm', 'intern'];
+const ETM_TABS: EtmTab[] = ['summary', 'mine', 'calendar'];
+
+// Hash routing (#tasks/ads/mine) so a refresh restores the last location.
+function parseHash(hash: string): { board: BoardKey; cluster: string | null; tab: EtmTab } {
+  const parts = hash.replace(/^#/, '').split('/').filter(Boolean);
+  const board = BOARD_KEYS.includes(parts[0] as BoardKey) ? (parts[0] as BoardKey) : 'dashboard';
+  let cluster: string | null = null;
+  let tab: EtmTab = 'summary';
+  if (board === 'tasks') {
+    for (const p of parts.slice(1)) {
+      if (CLUSTER_SLUGS.includes(p)) cluster = p;
+      else if (ETM_TABS.includes(p as EtmTab)) tab = p as EtmTab;
+    }
+  }
+  return { board, cluster, tab };
+}
+
 const SOON: Partial<Record<BoardKey, { title: string; note: string }>> = {
   // Deliberately parked: the Dashboard gets finalized after all the module
   // tabs are done (Dashboard.tsx holds the earlier draft).
@@ -29,10 +50,27 @@ export default function Shell({ user }: { user: User }) {
   const myEmail = (user.email || '').toLowerCase();
   const { usersMap, emailToUid } = useUsersMap();
 
-  const [board, setBoard] = useState<BoardKey>('dashboard');
-  const [etmCluster, setEtmCluster] = useState<string | null>(null); // admin-picked, lowercase
+  const [initial] = useState(() =>
+    typeof window !== 'undefined'
+      ? parseHash(window.location.hash)
+      : { board: 'dashboard' as BoardKey, cluster: null, tab: 'summary' as EtmTab }
+  );
+  const [board, setBoard] = useState<BoardKey>(initial.board);
+  const [etmCluster, setEtmCluster] = useState<string | null>(initial.cluster); // admin-picked, lowercase
+  const [etmTab, setEtmTab] = useState<EtmTab>(initial.tab);
   const [myCluster, setMyCluster] = useState<string | null>(null); // from Members registry
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Keep the URL hash in sync so refresh (and bookmarks) restore this spot.
+  useEffect(() => {
+    const parts: string[] = [board];
+    if (board === 'tasks') {
+      if (isAdmin && etmCluster) parts.push(etmCluster);
+      if (etmTab !== 'summary') parts.push(etmTab);
+    }
+    const h = `#${parts.join('/')}`;
+    if (window.location.hash !== h) window.history.replaceState(null, '', h);
+  }, [board, etmCluster, etmTab, isAdmin]);
 
   const [profile, setProfile] = useState<UserProfile>({});
   const [showUname, setShowUname] = useState(false);
@@ -64,7 +102,10 @@ export default function Shell({ user }: { user: User }) {
 
   const pickBoard = useCallback((b: BoardKey, cluster?: string) => {
     setBoard(b);
-    if (b === 'tasks') setEtmCluster(cluster ?? null);
+    if (b === 'tasks') {
+      setEtmCluster(cluster ?? null);
+      setEtmTab('summary');
+    }
     setSidebarOpen(false);
   }, []);
 
@@ -110,6 +151,8 @@ export default function Shell({ user }: { user: User }) {
               myEmail={myEmail}
               usersMap={usersMap}
               emailToUid={emailToUid}
+              tab={etmTab}
+              onTab={setEtmTab}
             />
           )}
           {board === 'members' &&
