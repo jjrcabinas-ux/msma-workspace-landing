@@ -171,8 +171,10 @@ export default function Etm({
               key={`${t.id}|${t.date}|${t.task}|${t.details}|${t.due}|${t.status}|${t.help}`}
             >
               <div>
+                {/* Commit on blur, not change — per-keystroke commits remount
+                    the row and break continuous typing / the native picker. */}
                 <input className="etm-input" type="date" defaultValue={t.date} aria-label="Date" disabled={!editable}
-                  onChange={(e) => mutate(email, i, { date: e.target.value })} />
+                  onBlur={(e) => { if (e.target.value !== t.date) mutate(email, i, { date: e.target.value }); }} />
               </div>
               <div>
                 <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!editable}
@@ -184,7 +186,7 @@ export default function Etm({
               </div>
               <div>
                 <input className="etm-input" type="date" defaultValue={t.due} aria-label="Due date" disabled={!editable}
-                  onChange={(e) => mutate(email, i, { due: e.target.value })} />
+                  onBlur={(e) => { if (e.target.value !== t.due) mutate(email, i, { due: e.target.value }); }} />
               </div>
               <div>
                 <button className="etm-status" data-s={t.status} title="Click to change status" disabled={!editable}
