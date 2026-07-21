@@ -49,3 +49,10 @@ export function fmtShort(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   return `${MON[m - 1]} ${d}, ${y}`;
 }
+
+/** Monday-to-Sunday week containing the given date. */
+export function weekRange(iso: string): { start: string; end: string } {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dow = (new Date(y, m - 1, d).getDay() + 6) % 7; // Mon = 0
+  return { start: toIso(new Date(y, m - 1, d - dow)), end: toIso(new Date(y, m - 1, d - dow + 6)) };
+}

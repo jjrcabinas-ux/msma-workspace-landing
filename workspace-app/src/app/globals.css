@@ -78,6 +78,24 @@ a{color:inherit;text-decoration:none}
   border-radius:12px;padding:8px;min-width:210px;z-index:40;box-shadow:0 18px 50px rgba(0,0,0,.5);
   transform-origin:top right;animation:drop-open .18s ease;
 }
+.tb-bell{position:relative}
+.tb-badge{
+  position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:999px;
+  background:var(--red);color:#fff;font-size:.58rem;font-weight:700;
+  display:grid;place-items:center;padding:0 4px;line-height:1;
+}
+.notif-menu{
+  position:absolute;top:48px;right:52px;background:var(--card);border:1px solid var(--line-strong);
+  border-radius:12px;padding:8px;width:320px;max-height:70vh;overflow-y:auto;z-index:40;
+  box-shadow:0 18px 50px rgba(0,0,0,.5);transform-origin:top right;animation:drop-open .18s ease;
+}
+.notif-head{font-weight:700;font-size:.82rem;color:#fff;padding:8px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.notif-empty{color:var(--dim);font-size:.8rem;padding:14px 10px;text-align:center}
+.notif-item{display:flex;gap:10px;width:100%;text-align:left;padding:9px 10px;border-radius:8px;align-items:flex-start}
+.notif-item:hover{background:var(--card-2)}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex:none;margin-top:5px}
+.notif-body{font-size:.8rem;color:#fff;font-weight:600;line-height:1.4}
+.notif-sub{display:block;color:var(--dim);font-size:.72rem;font-weight:400;margin-top:2px}
 .avatar-menu .who{padding:8px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
 .avatar-menu .who b{display:block;font-size:.82rem}
 .avatar-menu .who span{font-size:.72rem;color:var(--grey);word-break:break-all}

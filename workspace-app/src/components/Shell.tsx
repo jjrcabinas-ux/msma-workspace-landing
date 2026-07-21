@@ -5,6 +5,8 @@ import type { User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, isAdminEmail } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
+import { daysBetween, todayISO, weekRange } from '@/lib/dates';
+import { useMyTasks } from '@/hooks/useMyTasks';
 import { useUsersMap } from '@/hooks/useUsersMap';
 import Topbar from '@/components/Topbar';
 import Sidebar, { type BoardKey } from '@/components/Sidebar';
@@ -125,6 +127,47 @@ export default function Shell({ user }: { user: User }) {
   const myLabel = profile.fullName || user.displayName || myEmail.split('@')[0];
   const myPhoto = profile.photo || usersMap[user.uid]?.photo || null;
 
+  // Notifications, computed live from the member's own sheet: a weekly
+  // encode reminder plus due-today and overdue nudges. They disappear on
+  // their own the moment the user acts (adds a deliverable / marks Done).
+  const inRegistry = !isAdmin || (myCluster || '') !== '';
+  const myTasks = useMyTasks(inRegistry ? myEmail : '');
+  const notifs = useMemo(() => {
+    if (!inRegistry) return [];
+    const today = todayISO();
+    const wk = weekRange(today);
+    const list: { id: string; title: string; sub: string }[] = [];
+    const hasThisWeek = myTasks.some((t) => t.date >= wk.start && t.date <= wk.end);
+    if (!hasThisWeek) {
+      list.push({
+        id: 'week',
+        title: 'No deliverables encoded for this week yet',
+        sub: 'Add what you’re working on — tap to open My Deliverables.',
+      });
+    }
+    myTasks
+      .filter((t) => t.status !== 'Done' && t.due === today)
+      .forEach((t) => list.push({ id: `due-${t.id}`, title: `“${t.task || '(untitled)'}” is due today`, sub: 'Tap to update its status.' }));
+    myTasks
+      .filter((t) => t.status !== 'Done' && t.due && t.due < today)
+      .forEach((t) => {
+        const n = daysBetween(t.due, today);
+        list.push({
+          id: `over-${t.id}`,
+          title: `“${t.task || '(untitled)'}” is ${n} day${n === 1 ? '' : 's'} overdue`,
+          sub: n >= 3 ? 'Status is locked — coordinate with your supervisor.' : 'Tap to update its status.',
+        });
+      });
+    return list.slice(0, 8);
+  }, [inRegistry, myTasks]);
+
+  const openMyDeliverables = useCallback(() => {
+    setBoard('tasks');
+    setEtmCluster(null);
+    setEtmTab('mine');
+    setSidebarOpen(false);
+  }, []);
+
   const pickBoard = useCallback((b: BoardKey, cluster?: string) => {
     setBoard(b);
     if (b === 'tasks') {
@@ -148,6 +191,8 @@ export default function Shell({ user }: { user: User }) {
         myEmail={myEmail}
         isAdmin={isAdmin}
         photo={myPhoto}
+        notifs={notifs}
+        onNotifClick={openMyDeliverables}
         usersMap={usersMap}
         emailToUid={emailToUid}
         onNavigate={(b) => pickBoard(b)}
