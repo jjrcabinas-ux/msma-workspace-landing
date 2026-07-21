@@ -8,6 +8,7 @@ import { todayISO } from '@/lib/dates';
 import { empColor, newTaskId } from '@/lib/ui';
 import type { BirFiling } from '@/lib/birCalendar';
 import Pava from '@/components/Pava';
+import DatePicker from '@/components/DatePicker';
 import EtmCalendar from '@/components/EtmCalendar';
 import EtmSummary from '@/components/EtmSummary';
 
@@ -171,10 +172,8 @@ export default function Etm({
               key={`${t.id}|${t.date}|${t.task}|${t.details}|${t.due}|${t.status}|${t.help}`}
             >
               <div>
-                {/* Commit on blur, not change — per-keystroke commits remount
-                    the row and break continuous typing / the native picker. */}
-                <input className="etm-input" type="date" defaultValue={t.date} aria-label="Date" disabled={!editable}
-                  onBlur={(e) => { if (e.target.value !== t.date) mutate(email, i, { date: e.target.value }); }} />
+                <DatePicker value={t.date} ariaLabel="Date" disabled={!editable}
+                  onChange={(iso) => mutate(email, i, { date: iso })} />
               </div>
               <div>
                 <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!editable}
@@ -185,8 +184,8 @@ export default function Etm({
                   onBlur={(e) => { if (e.target.value !== t.details) mutate(email, i, { details: e.target.value }); }} />
               </div>
               <div>
-                <input className="etm-input" type="date" defaultValue={t.due} aria-label="Due date" disabled={!editable}
-                  onBlur={(e) => { if (e.target.value !== t.due) mutate(email, i, { due: e.target.value }); }} />
+                <DatePicker value={t.due} ariaLabel="Due date" disabled={!editable}
+                  onChange={(iso) => mutate(email, i, { due: iso })} />
               </div>
               <div>
                 <button className="etm-status" data-s={t.status} title="Click to change status" disabled={!editable}
