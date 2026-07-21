@@ -559,7 +559,7 @@ a{color:inherit;text-decoration:none}
 .cl-row.item:hover{background:rgba(163,197,255,.04)}
 .cl-row.item.empty{cursor:default}
 .cl-name{color:#fff;font-weight:700;font-size:.85rem}
-.cl-sub{color:var(--dim);font-size:.72rem;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.cl-sub{color:var(--dim);font-size:.74rem;margin-top:2px}
 .chan-chip{
   display:inline-block;font-size:.68rem;font-weight:700;color:#fff;border-radius:6px;padding:3px 10px;
 }
