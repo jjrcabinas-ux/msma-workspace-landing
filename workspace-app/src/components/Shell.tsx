@@ -17,11 +17,11 @@ import SettingsPage from '@/components/SettingsPage';
 import UsernamePrompt from '@/components/UsernamePrompt';
 import ProfileModal from '@/components/ProfileModal';
 
-export type EtmTab = 'summary' | 'mine' | 'calendar' | 'interns';
+export type EtmTab = 'summary' | 'mine' | 'sheets' | 'calendar' | 'interns';
 
 const BOARD_KEYS: BoardKey[] = ['dashboard', 'tasks', 'tax', 'books', 'audit', 'clients', 'members', 'settings'];
 const CLUSTER_SLUGS = ['rpm', 'ads', 'vcm', 'intern'];
-const ETM_TABS: EtmTab[] = ['summary', 'mine', 'calendar', 'interns'];
+const ETM_TABS: EtmTab[] = ['summary', 'mine', 'sheets', 'calendar', 'interns'];
 
 // Hash routing (#tasks/ads/mine) so a refresh restores the last location.
 function parseHash(hash: string): { board: BoardKey; cluster: string | null; tab: EtmTab } {

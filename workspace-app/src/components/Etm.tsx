@@ -60,8 +60,8 @@ export default function Etm({
   myEmail: string;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
-  tab: 'summary' | 'mine' | 'calendar' | 'interns';
-  onTab: (t: 'summary' | 'mine' | 'calendar' | 'interns') => void;
+  tab: 'summary' | 'mine' | 'sheets' | 'calendar' | 'interns';
+  onTab: (t: 'summary' | 'mine' | 'sheets' | 'calendar' | 'interns') => void;
 }) {
   const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
@@ -358,11 +358,14 @@ export default function Etm({
       <div className="board-tabs">
         <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => onTab('summary')}>Team Summary</div>
         <div className={`btab${tab === 'mine' ? ' on' : ''}`} onClick={() => onTab('mine')}>My Deliverables</div>
+        {isAdmin && (
+          <div className={`btab${tab === 'sheets' ? ' on' : ''}`} onClick={() => onTab('sheets')}>All Sheets</div>
+        )}
         <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => onTab('calendar')}>Calendar</div>
         {cluster !== 'INTERN' && (
           <div className={`btab${tab === 'interns' ? ' on' : ''}`} onClick={() => onTab('interns')}>Intern</div>
         )}
-        {tab === 'mine' && (
+        {(tab === 'mine' || tab === 'sheets') && (
           <div className="etm-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -412,6 +415,18 @@ export default function Etm({
             <div className="soonboard">
               <b>No sheet of yours here</b>Your account isn’t a member of the {cluster}
               {cluster === 'INTERN' ? ' group' : ' cluster'}, so you don’t have a deliverables sheet in it.
+            </div>
+          )}
+        </>
+      )}
+      {tab === 'sheets' && isAdmin && (
+        <>
+          <div style={{ height: 16 }} />
+          {roster.length ? (
+            roster.map((email, idx) => sheetFor(email, idx))
+          ) : (
+            <div className="soonboard">
+              <b>No members in this cluster yet</b>Add member emails in the Members module and assign them here.
             </div>
           )}
         </>
