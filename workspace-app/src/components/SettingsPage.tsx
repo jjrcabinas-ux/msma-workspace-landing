@@ -1,11 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UsersMap } from '@/lib/types';
 import { CLUSTERS } from '@/lib/types';
-import { MON, fmtShort, todayISO } from '@/lib/dates';
+import { MON, fmtShort, todayISO, weekRange } from '@/lib/dates';
+import { newTaskId } from '@/lib/ui';
+import DatePicker from '@/components/DatePicker';
+import Select from '@/components/Select';
+
+const DEST_OPTIONS = [
+  { label: 'My Deliverables', value: 'mine' },
+  { label: 'Team Summary', value: 'summary' },
+  { label: 'Calendar', value: 'calendar' },
+  { label: 'Intern tab', value: 'interns' },
+];
+const TYPE_OPTIONS = [
+  { label: 'Show to everyone', value: 'general' },
+  { label: 'Hide for members done encoding this week', value: 'weekly-encode' },
+];
+
+type Announcement = { id: string; title: string; sub: string; dest: string; type: string; expires: string };
 
 // Settings is a list of entries (more arrive later). The Cluster Directory
 // popup mirrors the firm's standard printed directory: title band, position
@@ -29,6 +45,67 @@ export default function SettingsPage({
 }) {
   const [members, setMembers] = useState<MemberEntry[]>([]);
   const [dirOpen, setDirOpen] = useState(false);
+  const [annOpen, setAnnOpen] = useState(false);
+  const [anns, setAnns] = useState<Announcement[]>([]);
+  const [annTitle, setAnnTitle] = useState('');
+  const [annSub, setAnnSub] = useState('');
+  const [annDest, setAnnDest] = useState('mine');
+  const [annType, setAnnType] = useState('general');
+  const [annExpires, setAnnExpires] = useState(weekRange(todayISO()).end);
+  const [annError, setAnnError] = useState('');
+  const [annSent, setAnnSent] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    return onSnapshot(
+      collection(db, 'announcements'),
+      (snap) => {
+        const list: Announcement[] = [];
+        snap.forEach((d) => {
+          const v = d.data();
+          list.push({
+            id: d.id,
+            title: (v.title as string) || '',
+            sub: (v.sub as string) || '',
+            dest: (v.dest as string) || 'mine',
+            type: (v.type as string) || 'general',
+            expires: (v.expires as string) || '',
+          });
+        });
+        list.sort((a, b) => b.expires.localeCompare(a.expires));
+        setAnns(list);
+      },
+      () => {}
+    );
+  }, [isAdmin]);
+
+  async function sendAnnouncement() {
+    setAnnError('');
+    setAnnSent(false);
+    if (!annTitle.trim()) {
+      setAnnError('Please write the reminder title.');
+      return;
+    }
+    if (!annExpires) {
+      setAnnError('Pick an expiry date.');
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'announcements', newTaskId()), {
+        title: annTitle.trim(),
+        sub: annSub.trim(),
+        dest: annDest,
+        type: annType,
+        expires: annExpires,
+        createdAt: serverTimestamp(),
+      });
+      setAnnTitle('');
+      setAnnSub('');
+      setAnnSent(true);
+    } catch {
+      setAnnError('Couldn’t send right now — try again.');
+    }
+  }
 
   useEffect(() => {
     return onSnapshot(
@@ -141,10 +218,107 @@ export default function SettingsPage({
           </div>
           <span className="set-arrow">›</span>
         </button>
+        {isAdmin && (
+          <button className="set-item" onClick={() => { setAnnSent(false); setAnnOpen(true); }}>
+            <div>
+              <div className="set-title">Send Announcement</div>
+              <div className="set-sub">Broadcast a reminder to everyone’s notification bell</div>
+            </div>
+            <span className="set-arrow">›</span>
+          </button>
+        )}
       </div>
       <div className="empty-note" style={{ marginTop: 12 }}>
         More settings — roles, preferences, and module options — arrive with the full build.
       </div>
+
+      {annOpen && (
+        <div
+          className="uname-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAnnOpen(false);
+          }}
+        >
+          <div className="uname-card prof-card" role="dialog" aria-modal="true" aria-labelledby="ann-title">
+            <h3 id="ann-title">Send Announcement</h3>
+            <p>Shows in every member’s notification bell until it expires; tapping it opens the destination tab.</p>
+            <div className="prof-grid">
+              <div className="prof-field full">
+                <label htmlFor="ann-t">Title</label>
+                <input id="ann-t" className="mem-input" placeholder="e.g. Reminder: encode your weekly deliverables"
+                  value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} />
+              </div>
+              <div className="prof-field full">
+                <label htmlFor="ann-s">Message</label>
+                <input id="ann-s" className="mem-input" placeholder="Optional details shown under the title"
+                  value={annSub} onChange={(e) => setAnnSub(e.target.value)} />
+              </div>
+              <div className="prof-field">
+                <label>Destination</label>
+                <Select
+                  value={DEST_OPTIONS.find((o) => o.value === annDest)?.label || 'My Deliverables'}
+                  options={DEST_OPTIONS.map((o) => o.label)}
+                  ariaLabel="Announcement destination"
+                  onChange={(label) => {
+                    const hit = DEST_OPTIONS.find((o) => o.label === label);
+                    if (hit) setAnnDest(hit.value);
+                  }}
+                />
+              </div>
+              <div className="prof-field">
+                <label>Expires</label>
+                <div className="mem-input">
+                  <DatePicker value={annExpires} ariaLabel="Announcement expiry" onChange={setAnnExpires} />
+                </div>
+              </div>
+              <div className="prof-field full">
+                <label>Behavior</label>
+                <Select
+                  value={TYPE_OPTIONS.find((o) => o.value === annType)?.label || TYPE_OPTIONS[0].label}
+                  options={TYPE_OPTIONS.map((o) => o.label)}
+                  ariaLabel="Announcement behavior"
+                  onChange={(label) => {
+                    const hit = TYPE_OPTIONS.find((o) => o.label === label);
+                    if (hit) setAnnType(hit.value);
+                  }}
+                />
+              </div>
+            </div>
+            {annError && (
+              <div className="mem-error" role="alert" style={{ margin: '12px 0 0' }}>{annError}</div>
+            )}
+            {annSent && (
+              <div className="ann-sent" role="status">Sent! It’s now live in everyone’s bell.</div>
+            )}
+            <div className="uname-actions">
+              <button className="tool-new" onClick={sendAnnouncement}>Send to everyone</button>
+              <button className="uname-skip" onClick={() => setAnnOpen(false)}>Close</button>
+            </div>
+            {anns.length > 0 && (
+              <div className="ann-list">
+                <div className="gs-group">Announcements</div>
+                {anns.map((a) => {
+                  const active = a.expires >= todayISO();
+                  return (
+                    <div className="ann-row" key={a.id}>
+                      <div className="ann-body">
+                        {a.title}
+                        <span className="ann-sub">
+                          {active ? `until ${fmtShort(a.expires)}` : 'expired'}
+                          {a.type === 'weekly-encode' ? ' · hides when encoded' : ''}
+                        </span>
+                      </div>
+                      <button className="mem-del" onClick={() => deleteDoc(doc(db, 'announcements', a.id)).catch(() => {})}>
+                        Remove
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {dirOpen && (
         <div
