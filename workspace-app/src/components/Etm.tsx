@@ -32,7 +32,7 @@ export default function Etm({
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
 }) {
-  const [tab, setTab] = useState<'summary' | 'table' | 'calendar'>('summary');
+  const [tab, setTab] = useState<'summary' | 'mine' | 'table' | 'calendar'>('summary');
   const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
@@ -140,14 +140,101 @@ export default function Etm({
 
   const q = search.trim().toLowerCase();
 
+  const sheetFor = (email: string, idx: number) => {
+    const uid = emailToUid[email];
+    const label = labelOf(email);
+    const allTasks = sheets[email] || [];
+    const editable = canEdit(email);
+    const visible = q
+      ? allTasks
+          .map((t, i) => ({ t, i }))
+          .filter(({ t }) => `${t.task} ${t.details} ${t.help}`.toLowerCase().includes(q))
+      : allTasks.map((t, i) => ({ t, i }));
+    return (
+      <div className="etm-emp" key={email}>
+        <div className="etm-emp-head">
+          <Pava photo={uid ? usersMap[uid]?.photo : null} label={label} color={empColor(idx)} />
+          <div>
+            <div className="etm-emp-name">{label}</div>
+            <div className="etm-emp-sub">
+              {email} · {allTasks.length} task{allTasks.length === 1 ? '' : 's'}
+            </div>
+          </div>
+        </div>
+        <div className="etm-table">
+          <div className="etm-row head">
+            <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div><div />
+          </div>
+          {visible.map(({ t, i }) => (
+            <div
+              className="etm-row"
+              key={`${t.id}|${t.date}|${t.task}|${t.details}|${t.due}|${t.status}|${t.help}`}
+            >
+              <div>
+                <input className="etm-input" type="date" defaultValue={t.date} aria-label="Date" disabled={!editable}
+                  onChange={(e) => mutate(email, i, { date: e.target.value })} />
+              </div>
+              <div>
+                <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!editable}
+                  onBlur={(e) => { if (e.target.value !== t.task) mutate(email, i, { task: e.target.value }); }} />
+              </div>
+              <div>
+                <input className="etm-input" defaultValue={t.details} placeholder="Details" disabled={!editable}
+                  onBlur={(e) => { if (e.target.value !== t.details) mutate(email, i, { details: e.target.value }); }} />
+              </div>
+              <div>
+                <input className="etm-input" type="date" defaultValue={t.due} aria-label="Due date" disabled={!editable}
+                  onChange={(e) => mutate(email, i, { due: e.target.value })} />
+              </div>
+              <div>
+                <button className="etm-status" data-s={t.status} title="Click to change status" disabled={!editable}
+                  onClick={() => mutate(email, i, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length] })}>
+                  {t.status}
+                </button>
+              </div>
+              <div>
+                <input className="etm-input" defaultValue={t.help} placeholder="Help needed?" disabled={!editable}
+                  onBlur={(e) => { if (e.target.value !== t.help) mutate(email, i, { help: e.target.value }); }} />
+              </div>
+              <div>
+                {editable && (
+                  <button className="etm-del" title="Delete row" aria-label="Delete row"
+                    onClick={() => {
+                      const tasks = [...(sheets[email] || [])];
+                      tasks.splice(i, 1);
+                      persist(email, tasks);
+                    }}>
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {editable && (
+            <div className="etm-add"
+              onClick={() =>
+                persist(email, [
+                  ...(sheets[email] || []),
+                  { id: newTaskId(), date: todayISO(), task: '', details: '', due: '', status: 'Pending', help: '' },
+                ])
+              }>
+              ＋ Add task…
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {head}
       <div className="board-tabs">
         <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => setTab('summary')}>Team Summary</div>
+        <div className={`btab${tab === 'mine' ? ' on' : ''}`} onClick={() => setTab('mine')}>My Deliverables</div>
         <div className={`btab${tab === 'table' ? ' on' : ''}`} onClick={() => setTab('table')}>Main table</div>
         <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => setTab('calendar')}>Calendar</div>
-        {tab === 'table' && (
+        {(tab === 'table' || tab === 'mine') && (
           <div className="etm-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -174,6 +261,19 @@ export default function Etm({
         />
       )}
       {tab === 'calendar' && <EtmCalendar assignees={assignees} onAssign={assignFiling} />}
+      {tab === 'mine' && (
+        <>
+          <div style={{ height: 16 }} />
+          {roster.includes(myEmail) ? (
+            sheetFor(myEmail, roster.indexOf(myEmail))
+          ) : (
+            <div className="soonboard">
+              <b>No sheet of yours here</b>Your account isn’t a member of the {cluster}
+              {cluster === 'INTERN' ? ' group' : ' cluster'}, so you don’t have a deliverables sheet in it.
+            </div>
+          )}
+        </>
+      )}
       {tab === 'table' && (
         <>
           <div style={{ height: 16 }} />
@@ -182,91 +282,7 @@ export default function Etm({
               <b>No members in this cluster yet</b>Add member emails in the Members module and assign them here.
             </div>
           ) : (
-            roster.map((email, idx) => {
-              const uid = emailToUid[email];
-              const label = (uid && usersMap[uid]?.label) || email.split('@')[0];
-              const allTasks = sheets[email] || [];
-              const editable = canEdit(email);
-              const visible = q
-                ? allTasks
-                    .map((t, i) => ({ t, i }))
-                    .filter(({ t }) => `${t.task} ${t.details} ${t.help}`.toLowerCase().includes(q))
-                : allTasks.map((t, i) => ({ t, i }));
-              return (
-                <div className="etm-emp" key={email}>
-                  <div className="etm-emp-head">
-                    <Pava photo={uid ? usersMap[uid]?.photo : null} label={label} color={empColor(idx)} />
-                    <div>
-                      <div className="etm-emp-name">{label}</div>
-                      <div className="etm-emp-sub">
-                        {email} · {allTasks.length} task{allTasks.length === 1 ? '' : 's'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="etm-table">
-                    <div className="etm-row head">
-                      <div>Date</div><div>Task</div><div>Details</div><div>Due</div><div>Status</div><div>Help needed</div><div />
-                    </div>
-                    {visible.map(({ t, i }) => (
-                      <div
-                        className="etm-row"
-                        key={`${t.id}|${t.date}|${t.task}|${t.details}|${t.due}|${t.status}|${t.help}`}
-                      >
-                        <div>
-                          <input className="etm-input" type="date" defaultValue={t.date} aria-label="Date" disabled={!editable}
-                            onChange={(e) => mutate(email, i, { date: e.target.value })} />
-                        </div>
-                        <div>
-                          <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!editable}
-                            onBlur={(e) => { if (e.target.value !== t.task) mutate(email, i, { task: e.target.value }); }} />
-                        </div>
-                        <div>
-                          <input className="etm-input" defaultValue={t.details} placeholder="Details" disabled={!editable}
-                            onBlur={(e) => { if (e.target.value !== t.details) mutate(email, i, { details: e.target.value }); }} />
-                        </div>
-                        <div>
-                          <input className="etm-input" type="date" defaultValue={t.due} aria-label="Due date" disabled={!editable}
-                            onChange={(e) => mutate(email, i, { due: e.target.value })} />
-                        </div>
-                        <div>
-                          <button className="etm-status" data-s={t.status} title="Click to change status" disabled={!editable}
-                            onClick={() => mutate(email, i, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length] })}>
-                            {t.status}
-                          </button>
-                        </div>
-                        <div>
-                          <input className="etm-input" defaultValue={t.help} placeholder="Help needed?" disabled={!editable}
-                            onBlur={(e) => { if (e.target.value !== t.help) mutate(email, i, { help: e.target.value }); }} />
-                        </div>
-                        <div>
-                          {editable && (
-                            <button className="etm-del" title="Delete row" aria-label="Delete row"
-                              onClick={() => {
-                                const tasks = [...(sheets[email] || [])];
-                                tasks.splice(i, 1);
-                                persist(email, tasks);
-                              }}>
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {editable && (
-                      <div className="etm-add"
-                        onClick={() =>
-                          persist(email, [
-                            ...(sheets[email] || []),
-                            { id: newTaskId(), date: todayISO(), task: '', details: '', due: '', status: 'Pending', help: '' },
-                          ])
-                        }>
-                        ＋ Add task…
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            roster.map((email, idx) => sheetFor(email, idx))
           )}
         </>
       )}
