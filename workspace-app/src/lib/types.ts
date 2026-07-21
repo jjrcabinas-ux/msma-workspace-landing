@@ -55,7 +55,10 @@ export const STATUS_LABEL: Record<BoardStatus, string> = {
   review: 'For review',
 };
 
-export const CLUSTERS = ['RPM', 'VCM', 'ADS', 'INTERN'] as const;
+// One entry on a member's private Personal calendar.
+export type PersonalEvent = { id: string; date: string; title: string };
+
+export const CLUSTERS =['RPM', 'VCM', 'ADS', 'INTERN'] as const;
 export type Cluster = (typeof CLUSTERS)[number];
 
 export const POSITIONS = ['Junior Associate', 'Senior Associate', 'Associate Director', 'Partner'];

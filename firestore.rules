@@ -76,6 +76,11 @@ service cloud.firestore {
       allow read: if isStaff();
       allow write: if isAdmin() || isTaskOwner(email);
     }
+    // Personal calendar: a member's private events — readable and writable
+    // only by that member (and the admin), never by other staff.
+    match /members/{email}/personal/{doc} {
+      allow read, write: if isAdmin() || isTaskOwner(email);
+    }
     match /members/{email}/tasks/{taskId} {
       allow read: if isStaff();
       allow create: if (isAdmin() || isTaskOwner(email) || isSeniorAssocOfSameCluster(email)) && validTask();

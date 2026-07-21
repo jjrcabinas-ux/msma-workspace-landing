@@ -11,16 +11,20 @@ import type { BirFiling } from '@/lib/birCalendar';
 import Pava from '@/components/Pava';
 import AddDeliverableModal from '@/components/AddDeliverableModal';
 import DatePicker from '@/components/DatePicker';
+import AllCalendar from '@/components/AllCalendar';
 import EtmCalendar from '@/components/EtmCalendar';
+import PersonalCalendar from '@/components/PersonalCalendar';
 import EtmProfile from '@/components/EtmProfile';
 import EtmSummary from '@/components/EtmSummary';
 import ScheduleCalendar from '@/components/ScheduleCalendar';
 import Select from '@/components/Select';
 
 const CAL_VIEWS = [
+  { key: 'all', label: 'All Calendars' },
   { key: 'bir', label: 'BIR Tax Calendar' },
   { key: 'wfh', label: 'Work From Home Schedule' },
   { key: 'field', label: 'Fieldwork and Meetings' },
+  { key: 'personal', label: 'Personal' },
 ] as const;
 
 const STATUS_CYCLE: SheetStatus[] = ['Pending', 'Ongoing', 'Done'];
@@ -75,7 +79,7 @@ export default function Etm({
   const [internRoster, setInternRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
   const [addFor, setAddFor] = useState<string | null>(null); // email the add popup targets
-  const [calView, setCalView] = useState<'bir' | 'wfh' | 'field'>('bir');
+  const [calView, setCalView] = useState<'all' | 'bir' | 'wfh' | 'field' | 'personal'>('bir');
   const [lockNotice, setLockNotice] = useState<string | null>(null); // task name whose status is locked
 
   useEffect(() => {
@@ -426,7 +430,11 @@ export default function Etm({
             />
           </div>
           <div className="cal-single">
+            {calView === 'all' && (
+              <AllCalendar roster={roster} myEmail={myEmail} usersMap={usersMap} emailToUid={emailToUid} />
+            )}
             {calView === 'bir' && <EtmCalendar assignees={assignees} onAssign={assignFiling} />}
+            {calView === 'personal' && <PersonalCalendar myEmail={myEmail} />}
             {calView === 'wfh' && (
               <ScheduleCalendar
                 docKey="wfh"

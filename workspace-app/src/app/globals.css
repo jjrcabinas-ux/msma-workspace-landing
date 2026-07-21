@@ -362,6 +362,30 @@ a{color:inherit;text-decoration:none}
 .cal-day.sch-on-blue:hover{background:rgba(96,165,250,.30)}
 .cal-day.sch-on-amber{background:rgba(251,191,36,.22);color:var(--white)}
 .cal-day.sch-on-amber:hover{background:rgba(251,191,36,.32)}
+.cal-day.sch-on-violet{background:rgba(167,139,250,.22);color:var(--white)}
+.cal-day.sch-on-violet:hover{background:rgba(167,139,250,.32)}
+/* consolidated "All Calendars" view */
+.cal-day.all-on{color:var(--white);font-weight:700}
+.cal-dots{position:absolute;bottom:3px;left:0;right:0;display:flex;gap:3px;justify-content:center;pointer-events:none}
+.cal-dots i{width:5px;height:5px;border-radius:50%}
+.all-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
+.cal-dots .d-bir,.all-dot.d-bir{background:var(--lime)}
+.cal-dots .d-wfh,.all-dot.d-wfh{background:#60a5fa}
+.cal-dots .d-field,.all-dot.d-field{background:#fbbf24}
+.cal-dots .d-per,.all-dot.d-per{background:#a78bfa}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:.72rem;color:var(--grey)}
+.cal-legend span{display:inline-flex;align-items:center;gap:6px}
+.all-sec{
+  display:flex;align-items:center;gap:7px;font-size:.76rem;font-weight:700;color:var(--grey);
+  margin:14px 0 6px;
+}
+/* personal events */
+.pe-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line)}
+.pe-row:last-child{border-bottom:none}
+.pe-dot{width:8px;height:8px;border-radius:50%;background:#a78bfa;flex:none}
+.pe-title{flex:1;font-size:.82rem;color:var(--white);overflow-wrap:anywhere}
+.pe-del{color:var(--red);font-size:.8rem;padding:2px 6px;flex:none}
+.pe-add{display:flex;gap:8px;margin-top:12px}
 .cal-overlay{position:fixed;inset:0;background:rgba(4,7,13,.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:80;padding:24px}
 .cal-modal{background:var(--card);border:1px solid var(--line-strong);border-radius:14px;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.55);transform-origin:top center;animation:drop-open .2s ease}
 .cal-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);flex:none}
