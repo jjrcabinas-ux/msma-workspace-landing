@@ -8,7 +8,7 @@ import type { UsersMap } from '@/lib/types';
 import GlobalSearch from '@/components/GlobalSearch';
 import type { BoardKey } from '@/components/Sidebar';
 
-export type Notif = { id: string; title: string; sub: string; dest: 'summary' | 'mine' | 'calendar' | 'interns' };
+export type Notif = { id: string; title: string; sub: string; dest: 'summary' | 'mine' | 'sheets' | 'calendar' | 'interns' };
 
 export default function Topbar({
   myLabel,
