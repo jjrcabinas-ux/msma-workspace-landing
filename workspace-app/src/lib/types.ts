@@ -26,9 +26,10 @@ export type SheetTask = {
   date: string;
   task: string;
   details: string;
-  due: string;
+  due: string; // ISO in the UI; stored as a Firestore Timestamp for the rules
   status: SheetStatus;
   help: string;
+  order?: number; // createdAt millis, for stable sorting
 };
 
 export type UserProfile = {

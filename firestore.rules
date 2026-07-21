@@ -18,12 +18,35 @@ service cloud.firestore {
       allow list: if isStaff();
       allow create, update, delete: if isAdmin();
     }
-    // Employee Task Monitoring sheets (native module, fresh data):
-    // one doc per member holding their deliverables. Everyone on staff
-    // can read the cluster sheets; each member writes only their own.
+    // Legacy sheet doc (tasks array) — kept only so clients can migrate
+    // their own data into the per-task docs below, then delete it.
     match /members/{email}/sheet/{doc} {
       allow read: if isStaff();
       allow write: if isAdmin() || (isStaff() && request.auth.token.email.lower() == email);
+    }
+    function isTaskOwner(email) {
+      return isStaff() && request.auth.token.email.lower() == email;
+    }
+    // `due` must be a real timestamp (or null) so the overdue lock is
+    // enforceable server-side, not just in the UI.
+    function validTask() {
+      return request.resource.data.get('due', null) == null
+        || request.resource.data.due is timestamp;
+    }
+    // Overdue policy: 3+ days past due and still not Done — frozen for the
+    // owner; only the admin (direct supervisor) may update or delete it.
+    function lockedTask() {
+      return resource.data.get('status', '') != 'Done'
+        && resource.data.get('due', null) is timestamp
+        && resource.data.due + duration.value(3, 'd') < request.time;
+    }
+    // Task Monitoring deliverables: one doc per task. Staff read the
+    // cluster sheets; owners write their own except locked tasks.
+    match /members/{email}/tasks/{taskId} {
+      allow read: if isStaff();
+      allow create: if (isAdmin() || isTaskOwner(email)) && validTask();
+      allow update: if isAdmin() || (isTaskOwner(email) && !lockedTask() && validTask());
+      allow delete: if isAdmin() || (isTaskOwner(email) && !lockedTask());
     }
     // Personal boards: each member reads/writes only their own; admin sees all.
     match /users/{uid}/boards/{board} {

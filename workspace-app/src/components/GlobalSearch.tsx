@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { Timestamp, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { SheetTask, UsersMap } from '@/lib/types';
+import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
 import { birFilingsForMonth, type BirFiling } from '@/lib/birCalendar';
-import { fmtShort, shiftMonth, todayISO } from '@/lib/dates';
+import { fmtShort, shiftMonth, toIso, todayISO } from '@/lib/dates';
 import { empColor } from '@/lib/ui';
 import Pava from '@/components/Pava';
 import type { BoardKey } from '@/components/Sidebar';
@@ -62,8 +62,23 @@ export default function GlobalSearch({
       setClusters(clusterMap);
       const sheets = await Promise.all(
         members.map((m) =>
-          getDoc(doc(db, 'members', m.email, 'sheet', 'main'))
-            .then((s) => ({ m, tasks: ((s.exists() && s.data().tasks) || []) as SheetTask[] }))
+          getDocs(collection(db, 'members', m.email, 'tasks'))
+            .then((snap) => {
+              const tasks: SheetTask[] = [];
+              snap.forEach((d) => {
+                const v = d.data();
+                tasks.push({
+                  id: d.id,
+                  date: (v.date as string) || '',
+                  task: (v.task as string) || '',
+                  details: (v.details as string) || '',
+                  due: v.due instanceof Timestamp ? toIso(v.due.toDate()) : '',
+                  status: (v.status as SheetStatus) || 'Pending',
+                  help: (v.help as string) || '',
+                });
+              });
+              return { m, tasks };
+            })
             .catch(() => ({ m, tasks: [] as SheetTask[] }))
         )
       );

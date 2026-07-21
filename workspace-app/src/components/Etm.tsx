@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { Timestamp, collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SheetStatus, SheetTask, UsersMap } from '@/lib/types';
-import { daysBetween, todayISO } from '@/lib/dates';
+import { daysBetween, toIso, todayISO } from '@/lib/dates';
 import ListModal from '@/components/ListModal';
 import { empColor, newTaskId } from '@/lib/ui';
 import type { BirFiling } from '@/lib/birCalendar';
@@ -17,8 +17,30 @@ import EtmSummary from '@/components/EtmSummary';
 
 const STATUS_CYCLE: SheetStatus[] = ['Pending', 'Ongoing', 'Done'];
 
-function sheetDoc(email: string) {
-  return doc(db, 'members', email, 'sheet', 'main');
+function taskRef(email: string, id: string) {
+  return doc(db, 'members', email, 'tasks', id);
+}
+
+// The rules enforce the overdue lock against a real timestamp, so `due`
+// is stored as a Timestamp (local midnight of the picked date) and shown
+// as an ISO string in the UI.
+function dueToTs(iso: string): Timestamp | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  return Timestamp.fromDate(new Date(y, m - 1, d));
+}
+
+function docToTask(id: string, v: Record<string, unknown>): SheetTask {
+  return {
+    id,
+    date: (v.date as string) || '',
+    task: (v.task as string) || '',
+    details: (v.details as string) || '',
+    due: v.due instanceof Timestamp ? toIso(v.due.toDate()) : '',
+    status: (v.status as SheetStatus) || 'Pending',
+    help: (v.help as string) || '',
+    order: v.createdAt instanceof Timestamp ? v.createdAt.toMillis() : 0,
+  };
 }
 
 export default function Etm({
@@ -65,10 +87,12 @@ export default function Etm({
   useEffect(() => {
     const unsubs = roster.map((email) =>
       onSnapshot(
-        sheetDoc(email),
+        collection(db, 'members', email, 'tasks'),
         (snap) => {
           if (snap.metadata.hasPendingWrites) return;
-          const tasks = (snap.exists() && (snap.data().tasks as SheetTask[])) || [];
+          const tasks: SheetTask[] = [];
+          snap.forEach((d) => tasks.push(docToTask(d.id, d.data())));
+          tasks.sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id));
           setSheets((s) => ({ ...s, [email]: tasks }));
         },
         () => {}
@@ -79,16 +103,61 @@ export default function Etm({
 
   const canEdit = (email: string) => isAdmin || email === myEmail;
 
-  function persist(email: string, tasks: SheetTask[]) {
-    setSheets((s) => ({ ...s, [email]: tasks }));
-    setDoc(sheetDoc(email), { tasks }).catch(() => {});
+  // One-time migration: move any legacy sheet doc (tasks array) into the
+  // per-task docs the rules can actually police, then delete it.
+  useEffect(() => {
+    roster.forEach(async (email) => {
+      if (!canEdit(email)) return;
+      try {
+        const legacy = await getDoc(doc(db, 'members', email, 'sheet', 'main'));
+        if (!legacy.exists()) return;
+        const tasks = ((legacy.data().tasks as SheetTask[]) || []).filter(Boolean);
+        await Promise.all(
+          tasks.map((t, i) =>
+            setDoc(taskRef(email, t.id || `m${i}`), {
+              date: t.date || '',
+              task: t.task || '',
+              details: t.details || '',
+              due: dueToTs(t.due || ''),
+              status: t.status || 'Pending',
+              help: t.help || '',
+              createdAt: Timestamp.fromMillis(Date.now() + i),
+            })
+          )
+        );
+        await deleteDoc(doc(db, 'members', email, 'sheet', 'main'));
+      } catch {
+        /* leave the legacy doc for a later attempt */
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster]);
+
+  function updateTask(email: string, t: SheetTask, patch: Partial<SheetTask>) {
+    const data: Record<string, unknown> = { ...patch };
+    delete data.order;
+    if (patch.due !== undefined) data.due = dueToTs(patch.due);
+    updateDoc(taskRef(email, t.id), data).catch(() => {});
+    setSheets((s) => ({ ...s, [email]: (s[email] || []).map((x) => (x.id === t.id ? { ...x, ...patch } : x)) }));
   }
 
-  function mutate(email: string, i: number, patch: Partial<SheetTask>) {
-    const tasks = [...(sheets[email] || [])];
-    if (!tasks[i]) return;
-    tasks[i] = { ...tasks[i], ...patch };
-    persist(email, tasks);
+  function removeTask(email: string, id: string) {
+    deleteDoc(taskRef(email, id)).catch(() => {});
+    setSheets((s) => ({ ...s, [email]: (s[email] || []).filter((x) => x.id !== id) }));
+  }
+
+  function createTask(email: string, t: Omit<SheetTask, 'id'>) {
+    const id = newTaskId();
+    setDoc(taskRef(email, id), {
+      date: t.date,
+      task: t.task,
+      details: t.details,
+      due: dueToTs(t.due),
+      status: t.status,
+      help: t.help,
+      createdAt: Timestamp.now(),
+    }).catch(() => {});
+    setSheets((s) => ({ ...s, [email]: [...(s[email] || []), { id, ...t }] }));
   }
 
   const labelOf = (email: string) => {
@@ -117,18 +186,14 @@ export default function Etm({
 
   function assignFiling(email: string, f: BirFiling) {
     if (!canEdit(email)) return;
-    persist(email, [
-      ...(sheets[email] || []),
-      {
-        id: newTaskId(),
-        date: todayISO(),
-        task: `${f.code} — ${f.label} (${f.periodLabel})`,
-        details: '',
-        due: f.dueDate,
-        status: 'Pending',
-        help: '',
-      },
-    ]);
+    createTask(email, {
+      date: todayISO(),
+      task: `${f.code} — ${f.label} (${f.periodLabel})`,
+      details: '',
+      due: f.dueDate,
+      status: 'Pending',
+      help: '',
+    });
     onTab(email === myEmail ? 'mine' : 'summary');
   }
 
@@ -205,19 +270,19 @@ export default function Etm({
             >
               <div>
                 <DatePicker value={t.date} ariaLabel="Date" disabled={!editable}
-                  onChange={(iso) => mutate(email, i, { date: iso })} />
+                  onChange={(iso) => updateTask(email, t, { date: iso })} />
               </div>
               <div>
                 <input className="etm-input" defaultValue={t.task} placeholder="Task" disabled={!editable}
-                  onBlur={(e) => { if (e.target.value !== t.task) mutate(email, i, { task: e.target.value }); }} />
+                  onBlur={(e) => { if (e.target.value !== t.task) updateTask(email, t, { task: e.target.value }); }} />
               </div>
               <div>
                 <input className="etm-input" defaultValue={t.details} placeholder="Details" disabled={!editable}
-                  onBlur={(e) => { if (e.target.value !== t.details) mutate(email, i, { details: e.target.value }); }} />
+                  onBlur={(e) => { if (e.target.value !== t.details) updateTask(email, t, { details: e.target.value }); }} />
               </div>
               <div>
                 <DatePicker value={t.due} ariaLabel="Due date" disabled={!editable}
-                  onChange={(iso) => mutate(email, i, { due: iso })} />
+                  onChange={(iso) => updateTask(email, t, { due: iso })} />
               </div>
               <div>
                 <button
@@ -230,7 +295,7 @@ export default function Etm({
                       setLockNotice(t.task || '(untitled)');
                       return;
                     }
-                    mutate(email, i, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length] });
+                    updateTask(email, t, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length] });
                   }}
                 >
                   {locked ? '🔒 ' : ''}{t.status}
@@ -238,16 +303,12 @@ export default function Etm({
               </div>
               <div>
                 <input className="etm-input" defaultValue={t.help} placeholder="Help needed?" disabled={!editable}
-                  onBlur={(e) => { if (e.target.value !== t.help) mutate(email, i, { help: e.target.value }); }} />
+                  onBlur={(e) => { if (e.target.value !== t.help) updateTask(email, t, { help: e.target.value }); }} />
               </div>
               <div>
                 {editable && (
                   <button className="etm-del" title="Delete row" aria-label="Delete row"
-                    onClick={() => {
-                      const tasks = [...(sheets[email] || [])];
-                      tasks.splice(i, 1);
-                      persist(email, tasks);
-                    }}>
+                    onClick={() => removeTask(email, t.id)}>
                     ✕
                   </button>
                 )}
@@ -320,7 +381,7 @@ export default function Etm({
         <AddDeliverableModal
           onClose={() => setAddFor(null)}
           onAdd={(t) => {
-            persist(addFor, [...(sheets[addFor] || []), { id: newTaskId(), ...t }]);
+            createTask(addFor, t);
             setAddFor(null);
           }}
         />
