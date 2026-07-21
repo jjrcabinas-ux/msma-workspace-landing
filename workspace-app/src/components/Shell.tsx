@@ -131,9 +131,11 @@ export default function Shell({ user }: { user: User }) {
   // Notifications, computed live from the member's own sheet: a weekly
   // encode reminder plus due-today and overdue nudges. They disappear on
   // their own the moment the user acts (adds a deliverable / marks Done).
-  const inRegistry = !isAdmin || (myCluster || '') !== '';
-  const myTasks = useMyTasks(inRegistry ? myEmail : '');
-  const myWfh = useMyWfh(inRegistry ? myEmail : '');
+  // Personal obligation reminders (weekly encode, WFH, due/overdue) apply
+  // to members only — the admin has no sheet duties.
+  const personal = !isAdmin;
+  const myTasks = useMyTasks(personal ? myEmail : '');
+  const myWfh = useMyWfh(personal ? myEmail : '');
 
   // Admin-sent broadcasts (announcements collection). weekly-encode ones
   // hide themselves for users who already encoded this week.
@@ -167,9 +169,9 @@ export default function Shell({ user }: { user: User }) {
     const hasThisWeek0 = myTasks.some((t) => t.date >= wk0.start && t.date <= wk0.end);
     const annList = anns
       .filter((a) => a.title && a.expires >= today0)
-      .filter((a) => a.type !== 'weekly-encode' || !(inRegistry && hasThisWeek0))
+      .filter((a) => a.type !== 'weekly-encode' || (personal && !hasThisWeek0))
       .map((a) => ({ id: `ann-${a.id}`, title: a.title, sub: a.sub, dest: a.dest }));
-    if (!inRegistry) return annList.slice(0, 8);
+    if (!personal) return annList.slice(0, 8);
     const today = today0;
     const wk = wk0;
     const list: { id: string; title: string; sub: string; dest: EtmTab }[] = [...annList];
@@ -209,7 +211,7 @@ export default function Shell({ user }: { user: User }) {
         });
       });
     return list.slice(0, 8);
-  }, [inRegistry, myTasks, myWfh, anns]);
+  }, [personal, myTasks, myWfh, anns]);
 
   const openTaskTab = useCallback((dest: EtmTab) => {
     setBoard('tasks');
