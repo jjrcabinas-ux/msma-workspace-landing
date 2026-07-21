@@ -29,14 +29,12 @@ export default function EtmSummary({
   sheets,
   usersMap,
   emailToUid,
-  onOpenTable,
 }: {
   cluster: string;
   roster: string[];
   sheets: Record<string, SheetTask[]>;
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
-  onOpenTable: () => void;
 }) {
   const [modal, setModal] = useState<{ title: string; body: React.ReactNode } | null>(null);
   const today = todayISO();
@@ -256,16 +254,14 @@ export default function EtmSummary({
         </div>
       </div>
 
-      <div className="sum-heading">
-        Team Members <span>— click a card to open the sheets</span>
-      </div>
+      <div className="sum-heading">Team Members</div>
       <div className="emp-grid">
         {per.map((p) => {
           const pc = p.n ? Math.round((p.Done / p.n) * 100) : 0;
           const seg = (n: number, c: string) =>
             n > 0 ? <div style={{ width: `${(n / (p.n || 1)) * 100}%`, background: c }} /> : null;
           return (
-            <div className="sum-card emp-card" role="button" tabIndex={0} key={p.email} onClick={onOpenTable}>
+            <div className="sum-card" key={p.email}>
               <div className="emp-top">
                 <div style={{ flex: 1 }}>
                   <div className="emp-name">{p.label}</div>

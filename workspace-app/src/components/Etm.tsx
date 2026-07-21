@@ -32,7 +32,7 @@ export default function Etm({
   usersMap: UsersMap;
   emailToUid: Record<string, string>;
 }) {
-  const [tab, setTab] = useState<'summary' | 'mine' | 'table' | 'calendar'>('summary');
+  const [tab, setTab] = useState<'summary' | 'mine' | 'calendar'>('summary');
   const [search, setSearch] = useState('');
   const [roster, setRoster] = useState<string[]>([]);
   const [sheets, setSheets] = useState<Record<string, SheetTask[]>>({});
@@ -108,7 +108,7 @@ export default function Etm({
         help: '',
       },
     ]);
-    setTab('table');
+    setTab(email === myEmail ? 'mine' : 'summary');
   }
 
   const head = (
@@ -232,9 +232,8 @@ export default function Etm({
       <div className="board-tabs">
         <div className={`btab${tab === 'summary' ? ' on' : ''}`} onClick={() => setTab('summary')}>Team Summary</div>
         <div className={`btab${tab === 'mine' ? ' on' : ''}`} onClick={() => setTab('mine')}>My Deliverables</div>
-        <div className={`btab${tab === 'table' ? ' on' : ''}`} onClick={() => setTab('table')}>Main table</div>
         <div className={`btab${tab === 'calendar' ? ' on' : ''}`} onClick={() => setTab('calendar')}>Calendar</div>
-        {(tab === 'table' || tab === 'mine') && (
+        {tab === 'mine' && (
           <div className="etm-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -257,7 +256,6 @@ export default function Etm({
           sheets={sheets}
           usersMap={usersMap}
           emailToUid={emailToUid}
-          onOpenTable={() => setTab('table')}
         />
       )}
       {tab === 'calendar' && <EtmCalendar assignees={assignees} onAssign={assignFiling} />}
@@ -271,18 +269,6 @@ export default function Etm({
               <b>No sheet of yours here</b>Your account isn’t a member of the {cluster}
               {cluster === 'INTERN' ? ' group' : ' cluster'}, so you don’t have a deliverables sheet in it.
             </div>
-          )}
-        </>
-      )}
-      {tab === 'table' && (
-        <>
-          <div style={{ height: 16 }} />
-          {!roster.length ? (
-            <div className="soonboard">
-              <b>No members in this cluster yet</b>Add member emails in the Members module and assign them here.
-            </div>
-          ) : (
-            roster.map((email, idx) => sheetFor(email, idx))
           )}
         </>
       )}
