@@ -60,6 +60,24 @@ export type Cluster = (typeof CLUSTERS)[number];
 
 export const POSITIONS = ['Junior Associate', 'Senior Associate', 'Associate Director', 'Partner'];
 
+export const TAX_TYPES = ['WTC', 'EWT', 'FWT', 'WVAT', 'VAT', 'DST', 'FBT', 'IT'] as const;
+
+export type ClientContact = { name: string; position: string; phone: string; email: string };
+
+export type Client = {
+  id: string;
+  cluster: string;
+  name: string;
+  tin: string;
+  rdo: string;
+  address: string;
+  channel: '' | 'eBIR' | 'eFPS';
+  preparer: string;
+  reviewer: string;
+  contacts: ClientContact[];
+  taxTypes: Record<string, boolean>;
+};
+
 export const DEFAULT_GROUPS: BoardGroup[] = [
   { name: 'Employee Task Monitoring Summary', color: 'var(--blue)', items: [] },
   { name: 'Tax Compliance System Summary', color: 'var(--lime)', items: [] },

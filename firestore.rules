@@ -54,6 +54,11 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/members/$(request.auth.token.email.lower())).data.get('cluster', '') ==
            get(/databases/$(database)/documents/members/$(email)).data.get('cluster', 'none');
     }
+    // Client Masterlist: one doc per client, cluster-tagged. Any staff
+    // member maintains the masterlist, as in the tax compliance system.
+    match /clients/{id} {
+      allow read, create, update, delete: if isStaff();
+    }
     // Broadcast reminders shown in every member's notification bell.
     // Admin sends; staff read.
     match /announcements/{id} {

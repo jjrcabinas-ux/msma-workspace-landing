@@ -11,6 +11,7 @@ import { useMyWfh } from '@/hooks/useMyWfh';
 import { useUsersMap } from '@/hooks/useUsersMap';
 import Topbar from '@/components/Topbar';
 import Sidebar, { type BoardKey } from '@/components/Sidebar';
+import ClientMasterlist from '@/components/ClientMasterlist';
 import Etm from '@/components/Etm';
 import MembersAdmin from '@/components/MembersAdmin';
 import SettingsPage from '@/components/SettingsPage';
@@ -45,7 +46,6 @@ const SOON: Partial<Record<BoardKey, { title: string; note: string }>> = {
   tax: { title: 'Tax Compliance', note: 'This module is being built next — the BIR filing pipeline will live here.' },
   books: { title: 'Bookkeeping', note: 'This module is being built next — monthly closings and bookkeeping runs will live here.' },
   audit: { title: 'Audit', note: 'This module is being built next — engagement stages across clients will live here.' },
-  clients: { title: 'Client Masterlist', note: 'This module is being built next — engagement coverage per client will live here.' },
 };
 
 export default function Shell({ user }: { user: User }) {
@@ -277,6 +277,9 @@ export default function Shell({ user }: { user: User }) {
               tab={etmTab}
               onTab={setEtmTab}
             />
+          )}
+          {board === 'clients' && (
+            <ClientMasterlist isAdmin={isAdmin} myCluster={(myCluster || '').toUpperCase()} />
           )}
           {board === 'settings' && (
             <SettingsPage isAdmin={isAdmin} myCluster={(myCluster || '').toUpperCase()} usersMap={usersMap} emailToUid={emailToUid} />
