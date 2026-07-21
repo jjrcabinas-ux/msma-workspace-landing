@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Client } from '@/lib/types';
@@ -683,9 +683,13 @@ export default function TaxCompliance({
 // Period navigation: ‹ [period ▾] › with a grid picker grouped by year.
 function PeriodNav({ ret, p, onPick }: { ret: RetKey; p: Period; onPick: (p: Period) => void }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
+    const close = (e: MouseEvent) => {
+      if (wrapRef.current && e.target instanceof Node && wrapRef.current.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, [open]);
@@ -697,7 +701,7 @@ function PeriodNav({ ret, p, onPick }: { ret: RetKey; p: Period; onPick: (p: Per
     <div className="period-nav">
       <button className="cal-nav" aria-label="Previous period" disabled={!prevValidOrNull(ret, p)}
         onClick={() => { const prev = prevValidOrNull(ret, p); if (prev) onPick(prev); }}>‹</button>
-      <div className="pp-wrap">
+      <div className="pp-wrap" ref={wrapRef}>
         <button className="pp-btn" onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}>
           {periodLabel(ret, p)} <span className="pp-chev">▾</span>
         </button>

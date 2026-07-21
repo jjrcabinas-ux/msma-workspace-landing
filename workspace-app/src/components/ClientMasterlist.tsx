@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Client } from '@/lib/types';
@@ -41,9 +41,15 @@ export default function ClientMasterlist({
   const [repBusy, setRepBusy] = useState('');
   const [repError, setRepError] = useState('');
 
+  // Close the report dropdown on outside clicks only — clicks inside it
+  // (toggling the field checkboxes) must keep it open.
+  const repRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!repOpen) return;
-    const close = () => setRepOpen(false);
+    const close = (e: MouseEvent) => {
+      if (repRef.current && e.target instanceof Node && repRef.current.contains(e.target)) return;
+      setRepOpen(false);
+    };
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, [repOpen]);
@@ -126,7 +132,7 @@ export default function ClientMasterlist({
         <Select value={chan} options={CHANNEL_FILTERS} onChange={setChan} ariaLabel="Filter by channel" />
         {isAdmin && <Select value={adminCluster} options={HOME_CLUSTERS} onChange={setAdminCluster} ariaLabel="Cluster" />}
         <button className="tool-new" onClick={() => setEditing('new')}>+ Add client</button>
-        <div className="rep-wrap" style={{ marginLeft: 'auto' }}>
+        <div className="rep-wrap" style={{ marginLeft: 'auto' }} ref={repRef}>
           <button className="uname-skip" onClick={(e) => { e.stopPropagation(); setRepOpen((v) => !v); }}>
             ⎙ Generate report
           </button>
