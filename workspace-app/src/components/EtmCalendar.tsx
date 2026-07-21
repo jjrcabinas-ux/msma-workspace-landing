@@ -145,6 +145,7 @@ export default function EtmCalendar({
 
       {selected && (
         <ListModal
+          className="cal-wide"
           title={`${MONFULL[Number(selected.split('-')[1]) - 1]} ${Number(selected.split('-')[2])}, ${selected.split('-')[0]}`}
           onClose={() => {
             setSelected(null);

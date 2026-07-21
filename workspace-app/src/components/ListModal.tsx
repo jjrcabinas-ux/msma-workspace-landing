@@ -5,10 +5,12 @@ export default function ListModal({
   title,
   onClose,
   children,
+  className,
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <div
@@ -17,7 +19,7 @@ export default function ListModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="cal-modal" role="dialog" aria-modal="true">
+      <div className={`cal-modal${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true">
         <div className="cal-modal-head">
           <div className="cal-modal-title">{title}</div>
           <button className="cal-modal-close" aria-label="Close" onClick={onClose}>
