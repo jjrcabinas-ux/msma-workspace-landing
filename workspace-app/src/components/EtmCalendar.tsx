@@ -80,7 +80,9 @@ export default function EtmCalendar({
   return (
     <>
       <div className="cal-card">
-        <div className="cal-sub">BIR Tax Calendar — click a marked date to see what’s due, click a filing to add it as a task</div>
+        <div className="cal-sub">
+          <b style={{ color: 'var(--white)' }}>BIR Tax Calendar</b> — click a marked date to see what’s due, click a filing to add it as a task
+        </div>
         <div className="cal-header">
           <button className="cal-nav" aria-label="Previous month" onClick={() => step(-1)}>‹</button>
           <div className="cal-month">{MONFULL[month]} {year}</div>

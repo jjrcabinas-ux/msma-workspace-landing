@@ -107,7 +107,9 @@ export default function WfhCalendar({
   return (
     <>
       <div className="cal-card">
-        <div className="cal-sub">Work From Home Schedule — click a date to see who’s home{inRoster ? ' or mark your own' : ''}</div>
+        <div className="cal-sub">
+          <b style={{ color: 'var(--white)' }}>Work From Home Schedule</b> — click a date to see who’s home{inRoster ? ' or mark your own' : ''}
+        </div>
         <div className="cal-header">
           <button className="cal-nav" aria-label="Previous month" onClick={() => step(-1)}>‹</button>
           <div className="cal-month">{MONFULL[month]} {year}</div>
